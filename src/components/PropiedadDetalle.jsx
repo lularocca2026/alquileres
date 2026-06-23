@@ -369,11 +369,10 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
         </button>
         <button
           className="btn btn-secondary"
-          style={{ padding: '6px 10px', fontSize: 13, color: 'var(--text3)' }}
+          style={{ padding: '6px 10px', fontSize: 13, flex: 1, color: 'var(--text3)' }}
           onClick={() => setConfirmArchivar(true)}
-          title="Archivar contrato"
         >
-          🗄
+          Archivar
         </button>
       </div>
       {confirmArchivar && (
