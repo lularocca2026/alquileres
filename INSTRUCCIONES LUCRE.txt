@@ -1,0 +1,36 @@
+APP DE ALQUILERES
+═════════════════
+
+PRIMERA VEZ (solo una vez):
+────────────────────────────
+
+  1. Doble clic en → CONFIGURAR.bat
+
+     El asistente te va a guiar paso a paso:
+     - Instalar Node.js (si no está)
+     - Instalar Python (si no está)
+     - Elegir la carpeta donde guardar los archivos de WhatsApp
+
+     LISTO. No hay que tocar ningún otro archivo.
+
+
+TODOS LOS DÍAS:
+────────────────
+
+  → Doble clic en INICIAR.bat
+  → Se abre el navegador con la app
+
+
+DESDE EL CELULAR:
+──~~~~~~~~~~~~~~~~
+
+  → El celu debe estar en el mismo WiFi que la computadora
+  → Abrir el navegador del celu y entrar a:
+       http://[nombre-de-la-compu]:5174
+  → El nombre de la compu aparece en pantalla al iniciar la app
+
+
+PARA CERRAR:
+─────────────
+
+  → Cerrar la ventana negra

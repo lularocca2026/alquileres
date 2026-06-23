@@ -1,0 +1,1105 @@
+{
+  "propiedades": [
+    {
+      "IdPropiedad": 8,
+      "Direccion": "salta 685 pb D",
+      "Ciudad": null,
+      "Tipo": null,
+      "PrecioReferencia": 0.0,
+      "aguas CTA": null,
+      "NIS edersa": null,
+      "camuzzi CTA": null,
+      "Partida municipal": null,
+      "Partida Rentas pvcia": null,
+      "nomenclatura catastral": null
+    },
+    {
+      "IdPropiedad": 9,
+      "Direccion": "Salta PB",
+      "Ciudad": null,
+      "Tipo": null,
+      "PrecioReferencia": 0.0,
+      "aguas CTA": null,
+      "NIS edersa": null,
+      "camuzzi CTA": null,
+      "Partida municipal": null,
+      "Partida Rentas pvcia": null,
+      "nomenclatura catastral": null
+    },
+    {
+      "IdPropiedad": 1,
+      "Direccion": "Cafrune",
+      "Ciudad": "Fernadez Oro",
+      "Tipo": "Casa",
+      "PrecioReferencia": 2196093.0,
+      "aguas CTA": "25-004278-000-00",
+      "NIS edersa": "14795550002",
+      "camuzzi CTA": "8325/0-18-01-0004185/4",
+      "Partida municipal": "3462",
+      "Partida Rentas pvcia": "270110",
+      "nomenclatura catastral": "03-2-C-025-01"
+    },
+    {
+      "IdPropiedad": 2,
+      "Direccion": "Salta PB",
+      "Ciudad": "Cipolletti",
+      "Tipo": "Dpto",
+      "PrecioReferencia": 850000.0,
+      "aguas CTA": "315592",
+      "NIS edersa": "45372610001",
+      "camuzzi CTA": "8324/0-16-06-0048393/1",
+      "Partida municipal": "5501258",
+      "Partida Rentas pvcia": "315592",
+      "nomenclatura catastral": "03-1-G921-18B-F003"
+    },
+    {
+      "IdPropiedad": 3,
+      "Direccion": "salta 3E",
+      "Ciudad": "cipolletti",
+      "Tipo": "dpto",
+      "PrecioReferencia": 618710.0,
+      "aguas CTA": "2 801 842 901 700",
+      "NIS edersa": "34566590001",
+      "camuzzi CTA": null,
+      "Partida municipal": "5501286",
+      "Partida Rentas pvcia": "315606",
+      "nomenclatura catastral": "031G921 18BF017"
+    },
+    {
+      "IdPropiedad": 4,
+      "Direccion": "Ugarteche 3005 1B",
+      "Ciudad": "CABA",
+      "Tipo": "dpto",
+      "PrecioReferencia": 564710.0,
+      "aguas CTA": "aysa n cta  1039478",
+      "NIS edersa": "edenor 7273876821",
+      "camuzzi CTA": null,
+      "Partida municipal": "partida 1853963-00",
+      "Partida Rentas pvcia": null,
+      "nomenclatura catastral": null
+    },
+    {
+      "IdPropiedad": 5,
+      "Direccion": "Lugones 371",
+      "Ciudad": "Cipolletti",
+      "Tipo": "dpto",
+      "PrecioReferencia": 723152.0,
+      "aguas CTA": "2701867900300",
+      "NIS edersa": "100-524403-1",
+      "camuzzi CTA": "83240220300622300",
+      "Partida municipal": "5501340",
+      "Partida Rentas pvcia": "317342",
+      "nomenclatura catastral": "031G927 23AF003"
+    }
+  ],
+  "inquilinos": [
+    {
+      "IdInquilino": 2,
+      "Apellido": "Adriana Larocca",
+      "DNI": null,
+      "Celular": "2995819403",
+      "Email": "adrianalarocca@gmail.com",
+      "observaciones": "sin sellar",
+      "activo": false
+    },
+    {
+      "IdInquilino": 4,
+      "Apellido": "Maria Victoria Pereira",
+      "DNI": 0,
+      "Celular": "2994687629",
+      "Email": "mariavictoriapr@yahoo.com.ar/ ysea3369@hotmail.com",
+      "observaciones": "contrato sellado",
+      "activo": false
+    },
+    {
+      "IdInquilino": 5,
+      "Apellido": "Matias Garcia",
+      "DNI": 42848264,
+      "Celular": "2994047821",
+      "Email": "matigarcia428@gmail.com",
+      "observaciones": "sin sellar",
+      "activo": true
+    },
+    {
+      "IdInquilino": 6,
+      "Apellido": "Roxana Senn",
+      "DNI": 39522200,
+      "Celular": "2995504788",
+      "Email": "roxanasenn@gmail.com",
+      "observaciones": "contrato sellado",
+      "activo": false
+    },
+    {
+      "IdInquilino": 7,
+      "Apellido": "Paola  Orellano/Raul Maldonado",
+      "DNI": 0,
+      "Celular": "+5492936420355/  +5492923434325",
+      "Email": null,
+      "observaciones": "sin sellar",
+      "activo": false
+    },
+    {
+      "IdInquilino": 8,
+      "Apellido": "Serena Chiarello",
+      "DNI": 0,
+      "Celular": "3454191465",
+      "Email": null,
+      "observaciones": "sin sellar",
+      "activo": false
+    }
+  ],
+  "contratos": [
+    {
+      "IdContrato": 10,
+      "IdPropiedad": 5,
+      "IdInquilino": 4,
+      "FechaInicio": "2025-01-01T00:00:00",
+      "FechaFin": "2026-12-31T00:00:00",
+      "MontoInicial": 768204.3696,
+      "Deposito": null,
+      "TipoAjuste": "ICL  3 MESES",
+      "notas": "pago inicial  1/1/25 $530.000",
+      "activo": true,
+      "MontoAnterior": 723152.0
+    },
+    {
+      "IdContrato": 12,
+      "IdPropiedad": 1,
+      "IdInquilino": 7,
+      "FechaInicio": "2025-04-01T00:00:00",
+      "FechaFin": "2027-03-31T00:00:00",
+      "MontoInicial": 2261975.79,
+      "Deposito": 1400.0,
+      "TipoAjuste": "icl 3 meses",
+      "notas": "dep 1400 us\r\n13/2/2026: Aumento IPC 3%. Anterior: $2196093",
+      "activo": true,
+      "MontoAnterior": null
+    },
+    {
+      "IdContrato": 13,
+      "IdPropiedad": 2,
+      "IdInquilino": 5,
+      "FechaInicio": "2025-11-01T00:00:00",
+      "FechaFin": "2026-02-28T00:00:00",
+      "MontoInicial": 780000.0,
+      "Deposito": 0.0,
+      "TipoAjuste": null,
+      "notas": null,
+      "activo": false,
+      "MontoAnterior": null
+    },
+    {
+      "IdContrato": 14,
+      "IdPropiedad": 3,
+      "IdInquilino": 6,
+      "FechaInicio": "2024-06-01T00:00:00",
+      "FechaFin": "2026-05-31T00:00:00",
+      "MontoInicial": 657626.859,
+      "Deposito": 600000.0,
+      "TipoAjuste": "icl/ trimestral",
+      "notas": null,
+      "activo": true,
+      "MontoAnterior": 618710.0
+    },
+    {
+      "IdContrato": 15,
+      "IdPropiedad": 4,
+      "IdInquilino": 8,
+      "FechaInicio": "2025-04-01T00:00:00",
+      "FechaFin": "2027-03-31T00:00:00",
+      "MontoInicial": 450000.0,
+      "Deposito": 340.0,
+      "TipoAjuste": "icl",
+      "notas": "350us dep garantia",
+      "activo": true,
+      "MontoAnterior": null
+    },
+    {
+      "IdContrato": 18,
+      "IdPropiedad": 2,
+      "IdInquilino": 2,
+      "FechaInicio": "2026-03-01T00:00:00",
+      "FechaFin": "2028-03-31T00:00:00",
+      "MontoInicial": 900000.0,
+      "Deposito": 0.0,
+      "TipoAjuste": "no",
+      "notas": null,
+      "activo": true,
+      "MontoAnterior": 600000.0
+    },
+    {
+      "IdContrato": 19,
+      "IdPropiedad": 0,
+      "IdInquilino": 0,
+      "FechaInicio": null,
+      "FechaFin": null,
+      "MontoInicial": 0.0,
+      "Deposito": 0.0,
+      "TipoAjuste": null,
+      "notas": null,
+      "activo": false,
+      "MontoAnterior": 0.0
+    },
+    {
+      "IdContrato": 20,
+      "IdPropiedad": 0,
+      "IdInquilino": 0,
+      "FechaInicio": null,
+      "FechaFin": null,
+      "MontoInicial": 0.0,
+      "Deposito": 0.0,
+      "TipoAjuste": null,
+      "notas": null,
+      "activo": true,
+      "MontoAnterior": 0.0
+    }
+  ],
+  "pagos": [
+    {
+      "idpago": 82,
+      "IdContrato": 14,
+      "Periodo": "2026-04-01T00:00:00",
+      "FechaPago": "2026-04-08T23:53:54",
+      "Monto": 778333.69,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": "alq abril 657,634 + 120.699,69 de pago municipal con esto salda muni hasta marzo"
+    },
+    {
+      "idpago": 83,
+      "IdContrato": 15,
+      "Periodo": "2026-04-01T00:00:00",
+      "FechaPago": "2026-04-02T00:08:57",
+      "Monto": 515797.0,
+      "exp extraordinarias": 84.075,
+      "Pagado": true,
+      "observaciones": "descuento al alquiler de $599,872"
+    },
+    {
+      "idpago": 90,
+      "IdContrato": 18,
+      "Periodo": "2026-05-26T00:00:00",
+      "FechaPago": "2026-05-15T00:00:00",
+      "Monto": 900000.0,
+      "exp extraordinarias": 36000.0,
+      "Pagado": true,
+      "observaciones": "devolvi extraord. 5/5/26 x MP"
+    },
+    {
+      "idpago": 91,
+      "IdContrato": 10,
+      "Periodo": "2026-05-26T00:00:00",
+      "FechaPago": "2026-05-11T00:00:00",
+      "Monto": 768180.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": "pendiente arreglo caldera, c Dykstra"
+    },
+    {
+      "idpago": 92,
+      "IdContrato": 12,
+      "Periodo": "2026-05-26T00:00:00",
+      "FechaPago": "2026-05-11T00:00:00",
+      "Monto": 2332835.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": " monto x abril, mayo, junio"
+    },
+    {
+      "idpago": 94,
+      "IdContrato": 15,
+      "Periodo": "2026-05-26T00:00:00",
+      "FechaPago": "2026-05-06T00:00:00",
+      "Monto": 515797.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 95,
+      "IdContrato": 10,
+      "Periodo": "2026-05-26T00:00:00",
+      "FechaPago": "2026-05-11T00:00:00",
+      "Monto": 768180.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 96,
+      "IdContrato": 14,
+      "Periodo": "2026-05-26T00:00:00",
+      "FechaPago": "2026-05-05T00:00:00",
+      "Monto": 599234.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 1,
+      "IdContrato": 10,
+      "Periodo": "2025-01-01T00:00:00",
+      "FechaPago": "2025-01-09T00:00:00",
+      "Monto": 376130.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 2,
+      "IdContrato": 10,
+      "Periodo": "2025-02-01T00:00:00",
+      "FechaPago": "2025-02-10T00:00:00",
+      "Monto": 530000.0,
+      "exp extraordinarias": 30000.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 3,
+      "IdContrato": 10,
+      "Periodo": "2025-03-01T00:00:00",
+      "FechaPago": "2025-03-10T00:00:00",
+      "Monto": 530000.0,
+      "exp extraordinarias": 62025.83,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 4,
+      "IdContrato": 10,
+      "Periodo": "2025-04-01T00:00:00",
+      "FechaPago": "2025-04-10T00:00:00",
+      "Monto": 568042.0,
+      "exp extraordinarias": 62025.83,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 5,
+      "IdContrato": 10,
+      "Periodo": "2025-05-01T00:00:00",
+      "FechaPago": "2025-05-10T00:00:00",
+      "Monto": 568042.0,
+      "exp extraordinarias": 77808.47,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 6,
+      "IdContrato": 10,
+      "Periodo": "2025-06-01T00:00:00",
+      "FechaPago": "2025-06-10T00:00:00",
+      "Monto": 568042.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 7,
+      "IdContrato": 10,
+      "Periodo": "2025-07-01T00:00:00",
+      "FechaPago": "2025-07-10T00:00:00",
+      "Monto": 640478.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 8,
+      "IdContrato": 10,
+      "Periodo": "2025-08-01T00:00:00",
+      "FechaPago": "2025-08-10T00:00:00",
+      "Monto": 640478.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 9,
+      "IdContrato": 10,
+      "Periodo": "2025-09-01T00:00:00",
+      "FechaPago": "2025-09-10T00:00:00",
+      "Monto": 640478.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 10,
+      "IdContrato": 10,
+      "Periodo": "2025-10-01T00:00:00",
+      "FechaPago": "2025-10-10T00:00:00",
+      "Monto": 682799.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 11,
+      "IdContrato": 10,
+      "Periodo": "2025-11-01T00:00:00",
+      "FechaPago": "2025-11-10T00:00:00",
+      "Monto": 682799.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 12,
+      "IdContrato": 10,
+      "Periodo": "2025-12-01T00:00:00",
+      "FechaPago": "2025-12-10T00:00:00",
+      "Monto": 682799.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 13,
+      "IdContrato": 10,
+      "Periodo": "2026-01-01T00:00:00",
+      "FechaPago": "2026-01-10T00:00:00",
+      "Monto": 723152.0,
+      "exp extraordinarias": 39349.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 14,
+      "IdContrato": 10,
+      "Periodo": "2026-02-01T00:00:00",
+      "FechaPago": "2026-02-10T00:00:00",
+      "Monto": 723152.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 16,
+      "IdContrato": 12,
+      "Periodo": "2025-03-01T00:00:00",
+      "FechaPago": "2025-03-21T00:00:00",
+      "Monto": 564517.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 17,
+      "IdContrato": 12,
+      "Periodo": "2025-04-01T00:00:00",
+      "FechaPago": "2025-04-10T00:00:00",
+      "Monto": 1750000.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 18,
+      "IdContrato": 12,
+      "Periodo": "2025-05-01T00:00:00",
+      "FechaPago": "2025-05-10T00:00:00",
+      "Monto": 1750000.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 19,
+      "IdContrato": 12,
+      "Periodo": "2025-06-01T00:00:00",
+      "FechaPago": "2025-06-10T00:00:00",
+      "Monto": 1750000.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 20,
+      "IdContrato": 12,
+      "Periodo": "2025-07-01T00:00:00",
+      "FechaPago": "2025-07-10T00:00:00",
+      "Monto": 1945026.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 21,
+      "IdContrato": 12,
+      "Periodo": "2025-08-01T00:00:00",
+      "FechaPago": "2025-08-10T00:00:00",
+      "Monto": 1945026.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 22,
+      "IdContrato": 12,
+      "Periodo": "2025-09-01T00:00:00",
+      "FechaPago": "2025-09-10T00:00:00",
+      "Monto": 1945026.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 23,
+      "IdContrato": 12,
+      "Periodo": "2025-10-01T00:00:00",
+      "FechaPago": "2025-10-10T00:00:00",
+      "Monto": 2073548.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 24,
+      "IdContrato": 12,
+      "Periodo": "2025-11-01T00:00:00",
+      "FechaPago": "2025-11-10T00:00:00",
+      "Monto": 2073548.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 25,
+      "IdContrato": 12,
+      "Periodo": "2025-12-01T00:00:00",
+      "FechaPago": "2025-12-10T00:00:00",
+      "Monto": 2073548.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 26,
+      "IdContrato": 12,
+      "Periodo": "2026-01-01T00:00:00",
+      "FechaPago": "2026-01-10T00:00:00",
+      "Monto": 2196093.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 27,
+      "IdContrato": 12,
+      "Periodo": "2026-02-01T00:00:00",
+      "FechaPago": "2026-02-10T00:00:00",
+      "Monto": 2196093.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 28,
+      "IdContrato": 13,
+      "Periodo": "2025-01-01T00:00:00",
+      "FechaPago": "2025-01-25T00:00:00",
+      "Monto": 508352.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 29,
+      "IdContrato": 13,
+      "Periodo": "2025-02-01T00:00:00",
+      "FechaPago": "2025-02-10T00:00:00",
+      "Monto": 528686.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 30,
+      "IdContrato": 13,
+      "Periodo": "2025-03-01T00:00:00",
+      "FechaPago": "2025-03-10T00:00:00",
+      "Monto": 549833.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 31,
+      "IdContrato": 13,
+      "Periodo": "2025-04-01T00:00:00",
+      "FechaPago": "2025-04-07T00:00:00",
+      "Monto": 571826.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 32,
+      "IdContrato": 13,
+      "Periodo": "2025-05-01T00:00:00",
+      "FechaPago": "2025-05-10T00:00:00",
+      "Monto": 594699.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 33,
+      "IdContrato": 13,
+      "Periodo": "2025-06-01T00:00:00",
+      "FechaPago": "2025-06-10T00:00:00",
+      "Monto": 618487.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 34,
+      "IdContrato": 13,
+      "Periodo": "2025-07-01T00:00:00",
+      "FechaPago": "2025-07-10T00:00:00",
+      "Monto": 643227.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 35,
+      "IdContrato": 13,
+      "Periodo": "2025-08-01T00:00:00",
+      "FechaPago": "2025-08-10T00:00:00",
+      "Monto": 668956.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 36,
+      "IdContrato": 13,
+      "Periodo": "2025-09-01T00:00:00",
+      "FechaPago": "2025-09-10T00:00:00",
+      "Monto": 695714.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 37,
+      "IdContrato": 13,
+      "Periodo": "2025-10-01T00:00:00",
+      "FechaPago": "2025-10-10T00:00:00",
+      "Monto": 723543.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 38,
+      "IdContrato": 13,
+      "Periodo": "2025-11-01T00:00:00",
+      "FechaPago": "2025-11-10T00:00:00",
+      "Monto": 750000.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 39,
+      "IdContrato": 13,
+      "Periodo": "2025-12-01T00:00:00",
+      "FechaPago": "2025-12-10T00:00:00",
+      "Monto": 780000.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 40,
+      "IdContrato": 13,
+      "Periodo": "2026-01-01T00:00:00",
+      "FechaPago": "2026-01-10T00:00:00",
+      "Monto": 810000.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 41,
+      "IdContrato": 13,
+      "Periodo": "2026-02-01T00:00:00",
+      "FechaPago": "2026-02-10T00:00:00",
+      "Monto": 850000.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 42,
+      "IdContrato": 14,
+      "Periodo": "2025-01-01T00:00:00",
+      "FechaPago": "2025-01-02T00:00:00",
+      "Monto": 444086.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 43,
+      "IdContrato": 14,
+      "Periodo": "2025-02-01T00:00:00",
+      "FechaPago": "2025-02-04T00:00:00",
+      "Monto": 444086.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 44,
+      "IdContrato": 14,
+      "Periodo": "2025-03-01T00:00:00",
+      "FechaPago": "2025-03-05T00:00:00",
+      "Monto": 491183.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 45,
+      "IdContrato": 14,
+      "Periodo": "2025-04-01T00:00:00",
+      "FechaPago": "2025-04-03T00:00:00",
+      "Monto": 491183.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 46,
+      "IdContrato": 14,
+      "Periodo": "2025-05-01T00:00:00",
+      "FechaPago": "2025-05-05T00:00:00",
+      "Monto": 491183.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 47,
+      "IdContrato": 14,
+      "Periodo": "2025-06-01T00:00:00",
+      "FechaPago": "2025-06-06T00:00:00",
+      "Monto": 541935.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 48,
+      "IdContrato": 14,
+      "Periodo": "2025-07-01T00:00:00",
+      "FechaPago": "2025-07-02T00:00:00",
+      "Monto": 541935.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 49,
+      "IdContrato": 14,
+      "Periodo": "2025-08-01T00:00:00",
+      "FechaPago": "2025-08-10T00:00:00",
+      "Monto": 541935.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 50,
+      "IdContrato": 14,
+      "Periodo": "2025-09-01T00:00:00",
+      "FechaPago": "2025-09-10T00:00:00",
+      "Monto": 583656.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 51,
+      "IdContrato": 14,
+      "Periodo": "2025-10-01T00:00:00",
+      "FechaPago": "2025-10-10T00:00:00",
+      "Monto": 583656.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 52,
+      "IdContrato": 14,
+      "Periodo": "2025-11-01T00:00:00",
+      "FechaPago": "2025-11-10T00:00:00",
+      "Monto": 583656.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 53,
+      "IdContrato": 14,
+      "Periodo": "2025-12-01T00:00:00",
+      "FechaPago": "2025-12-10T00:00:00",
+      "Monto": 618710.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 54,
+      "IdContrato": 14,
+      "Periodo": "2026-01-01T00:00:00",
+      "FechaPago": "2026-01-10T00:00:00",
+      "Monto": 618710.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 55,
+      "IdContrato": 14,
+      "Periodo": "2026-02-01T00:00:00",
+      "FechaPago": "2026-02-10T00:00:00",
+      "Monto": 618710.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 56,
+      "IdContrato": 15,
+      "Periodo": "2025-04-01T00:00:00",
+      "FechaPago": "2025-04-10T00:00:00",
+      "Monto": 450000.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 57,
+      "IdContrato": 15,
+      "Periodo": "2025-05-01T00:00:00",
+      "FechaPago": "2025-05-10T00:00:00",
+      "Monto": 450000.0,
+      "exp extraordinarias": 62000.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 58,
+      "IdContrato": 15,
+      "Periodo": "2025-06-01T00:00:00",
+      "FechaPago": "2025-06-10T00:00:00",
+      "Monto": 450000.0,
+      "exp extraordinarias": 62304.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 59,
+      "IdContrato": 15,
+      "Periodo": "2025-07-01T00:00:00",
+      "FechaPago": "2025-07-10T00:00:00",
+      "Monto": 500149.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 60,
+      "IdContrato": 15,
+      "Periodo": "2025-08-01T00:00:00",
+      "FechaPago": "2025-08-10T00:00:00",
+      "Monto": 500149.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 61,
+      "IdContrato": 15,
+      "Periodo": "2025-09-01T00:00:00",
+      "FechaPago": "2025-09-10T00:00:00",
+      "Monto": 500149.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 62,
+      "IdContrato": 15,
+      "Periodo": "2025-10-01T00:00:00",
+      "FechaPago": "2025-10-10T00:00:00",
+      "Monto": 533198.0,
+      "exp extraordinarias": 384123.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 63,
+      "IdContrato": 15,
+      "Periodo": "2025-11-01T00:00:00",
+      "FechaPago": "2025-11-10T00:00:00",
+      "Monto": 533198.0,
+      "exp extraordinarias": 384123.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 64,
+      "IdContrato": 15,
+      "Periodo": "2025-12-01T00:00:00",
+      "FechaPago": "2025-12-10T00:00:00",
+      "Monto": 533198.0,
+      "exp extraordinarias": 449123.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 65,
+      "IdContrato": 15,
+      "Periodo": "2026-01-01T00:00:00",
+      "FechaPago": "2026-01-10T00:00:00",
+      "Monto": 564710.0,
+      "exp extraordinarias": 480635.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 66,
+      "IdContrato": 15,
+      "Periodo": "2026-02-01T00:00:00",
+      "FechaPago": "2026-02-10T00:00:00",
+      "Monto": 564710.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 67,
+      "IdContrato": 15,
+      "Periodo": "2026-03-01T00:00:00",
+      "FechaPago": "2026-03-10T00:00:00",
+      "Monto": 564710.0,
+      "exp extraordinarias": null,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 72,
+      "IdContrato": 10,
+      "Periodo": "2026-04-01T00:00:00",
+      "FechaPago": "2026-04-01T13:57:35",
+      "Monto": 768180.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 73,
+      "IdContrato": 10,
+      "Periodo": "2026-03-01T00:00:00",
+      "FechaPago": "2026-03-10T13:58:37",
+      "Monto": 723152.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 75,
+      "IdContrato": 14,
+      "Periodo": "2026-03-01T00:00:00",
+      "FechaPago": "2026-04-08T00:04:47",
+      "Monto": 657626.859,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 76,
+      "IdContrato": 13,
+      "Periodo": "2026-03-01T00:00:00",
+      "FechaPago": "2026-03-10T00:00:00",
+      "Monto": 600000.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 77,
+      "IdContrato": 18,
+      "Periodo": "2026-04-01T00:00:00",
+      "FechaPago": "2026-04-03T23:30:02",
+      "Monto": 600000.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 78,
+      "IdContrato": 18,
+      "Periodo": "2026-03-01T00:00:00",
+      "FechaPago": "2026-03-03T23:33:00",
+      "Monto": 600000.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 80,
+      "IdContrato": 12,
+      "Periodo": "2026-03-01T00:00:00",
+      "FechaPago": "2026-03-11T23:47:03",
+      "Monto": 2196093.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    },
+    {
+      "idpago": 81,
+      "IdContrato": 12,
+      "Periodo": "2026-04-01T00:00:00",
+      "FechaPago": "2026-04-11T23:48:00",
+      "Monto": 2332835.0,
+      "exp extraordinarias": 0.0,
+      "Pagado": true,
+      "observaciones": null
+    }
+  ],
+  "mantenimiento": [
+    {
+      "IdMantenimiento": 3,
+      "IdPropiedad": 1,
+      "Fecha": "2026-02-12T00:00:00",
+      "Descripcion": "bomba riego",
+      "Costo": 1000000.0,
+      "Observacion": "reposicion"
+    },
+    {
+      "IdMantenimiento": 6,
+      "IdPropiedad": 2,
+      "Fecha": "2026-03-05T00:00:00",
+      "Descripcion": "Mantenimiento 3 radiadores y caldera y circuito calefaccion termostato digital",
+      "Costo": 655000.0,
+      "Observacion": "pago inquilino al finalizar contrato"
+    },
+    {
+      "IdMantenimiento": 7,
+      "IdPropiedad": 0,
+      "Fecha": null,
+      "Descripcion": null,
+      "Costo": 0.0,
+      "Observacion": null
+    }
+  ]
+}

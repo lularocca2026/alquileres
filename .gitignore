@@ -1,0 +1,30 @@
+# Dependencias
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+
+# Variables de entorno y secretos (NUNCA subir a GitHub)
+.env
+.env.local
+.env.*.local
+
+# Datos locales y media (no van al repo)
+data/media/
+data/estado.json
+backend/__pycache__/
+*.xlsx
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Editor
+.vscode/
+.idea/
