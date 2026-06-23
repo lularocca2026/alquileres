@@ -1,0 +1,24 @@
+{
+  "name": "Alquileres",
+  "short_name": "Alquileres",
+  "description": "Administración de propiedades en alquiler",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1E3A5F",
+  "theme_color": "#1E3A5F",
+  "icons": [
+    {
+      "src": "/icono-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icono-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
