@@ -42,7 +42,6 @@ function publicUrl(carpeta, archivo) {
 function VistaArchivos({ carpeta, onVolver }) {
   const [archivos, setArchivos] = useState([])
   const [cargando, setCargando] = useState(true)
-  const [fotoAbierta, setFotoAbierta] = useState(null)
 
   useEffect(() => {
     supabase.storage.from(BUCKET).list(carpeta, { limit: 500 })
@@ -54,11 +53,9 @@ function VistaArchivos({ carpeta, onVolver }) {
       .catch(() => setCargando(false))
   }, [carpeta])
 
-  const fotos = archivos.filter(f => tipoArchivo(f.name) === 'foto')
-  const audios = archivos.filter(f => tipoArchivo(f.name) === 'audio')
-  const otros = archivos.filter(f => !['foto','audio'].includes(tipoArchivo(f.name)))
-
   const titulo = carpeta.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
+  const excels = archivos.filter(f => tipoArchivo(f.name) === 'excel')
+  const resto = archivos.filter(f => tipoArchivo(f.name) !== 'excel')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
@@ -74,84 +71,45 @@ function VistaArchivos({ carpeta, onVolver }) {
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin archivos en esta carpeta</div>
         )}
 
-        {/* Fotos */}
-        {fotos.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 10 }}>
-              📷 Fotos ({fotos.length})
+        {/* Excel primero y destacado */}
+        {excels.map(f => (
+          <a key={f.name} href={publicUrl(carpeta, f.name)} target="_blank" rel="noopener noreferrer"
+            style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px',
+              background: 'var(--blue1)', borderRadius: 12, marginBottom: 16,
+              color: 'white', textDecoration: 'none' }}>
+            <span style={{ fontSize: 32 }}>📊</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>Ver Excel</div>
+              <div style={{ fontSize: 12, opacity: 0.8 }}>{f.name}</div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
-              {fotos.map(f => (
-                <div key={f.name} onClick={() => setFotoAbierta(f.name)}
-                  style={{ aspectRatio: '1', borderRadius: 6, overflow: 'hidden', cursor: 'pointer', background: 'var(--surface2)' }}>
-                  <img
-                    src={publicUrl(carpeta, f.name)}
-                    alt={f.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    loading="lazy"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+            <span style={{ fontSize: 20, opacity: 0.8 }}>↗</span>
+          </a>
+        ))}
 
-        {/* Audios */}
-        {audios.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 10 }}>
-              🎙 Audios ({audios.length})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {audios.map(f => (
-                <div key={f.name} style={{ background: 'var(--surface)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 6, wordBreak: 'break-all' }}>{f.name}</div>
-                  <audio controls src={publicUrl(carpeta, f.name)} style={{ width: '100%', height: 36 }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Otros (PDFs, videos, etc) */}
-        {otros.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 10 }}>
-              Otros ({otros.length})
+        {/* Lista de todos los archivos */}
+        {resto.length > 0 && (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 8 }}>
+              Archivos ({resto.length})
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {otros.map(f => {
+              {resto.map(f => {
                 const tipo = tipoArchivo(f.name)
                 return (
                   <a key={f.name} href={publicUrl(carpeta, f.name)} target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
                       background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)',
                       color: 'var(--text)', textDecoration: 'none' }}>
-                    <span style={{ fontSize: 20 }}>{ICONOS[tipo]}</span>
-                    <span style={{ fontSize: 13, flex: 1, wordBreak: 'break-all' }}>{f.name}</span>
-                    <span style={{ fontSize: 12, color: 'var(--blue1)' }}>↗</span>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>{ICONOS[tipo]}</span>
+                    <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                    <span style={{ fontSize: 13, color: 'var(--blue1)', flexShrink: 0 }}>↗</span>
                   </a>
                 )
               })}
             </div>
-          </div>
+          </>
         )}
       </div>
-
-      {/* Lightbox fotos */}
-      {fotoAbierta && (
-        <div onClick={() => setFotoAbierta(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 300,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <img src={publicUrl(carpeta, fotoAbierta)} alt=""
-            style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8, objectFit: 'contain' }} />
-          <button onClick={() => setFotoAbierta(null)}
-            style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.15)',
-              border: 'none', color: 'white', fontSize: 24, width: 40, height: 40, borderRadius: '50%', cursor: 'pointer' }}>
-            ✕
-          </button>
-        </div>
-      )}
     </div>
   )
 }
