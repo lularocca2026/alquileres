@@ -101,16 +101,15 @@ export default function Inquilinos({ onVolver }) {
               <div style={{ display: 'flex', gap: 6 }}>
                 {!inq.archivado && (
                   <button className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: 12 }} onClick={() => setEditando(inq)}>
-                    ✏
+                    Editar
                   </button>
                 )}
                 <button
                   className="btn btn-secondary"
                   style={{ padding: '5px 10px', fontSize: 12, color: inq.archivado ? 'var(--blue1)' : 'var(--text3)' }}
                   onClick={() => setConfirmarArchivar(inq)}
-                  title={inq.archivado ? 'Restaurar' : 'Archivar'}
                 >
-                  {inq.archivado ? '↩' : '🗄'}
+                  {inq.archivado ? 'Restaurar' : 'Archivar'}
                 </button>
               </div>
             </div>
