@@ -367,7 +367,37 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
         >
           + Nuevo contrato
         </button>
+        <button
+          className="btn btn-secondary"
+          style={{ padding: '6px 10px', fontSize: 13, color: 'var(--text3)' }}
+          onClick={() => setConfirmArchivar(true)}
+          title="Archivar contrato"
+        >
+          🗄
+        </button>
       </div>
+      {confirmArchivar && (
+        <div style={{ background: '#fee2e2', borderRadius: 8, padding: 14, marginBottom: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 10 }}>
+            ¿Archivar contrato? No aparecerá más como activo.
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary" style={{ flex: 1, padding: '8px' }} onClick={() => setConfirmArchivar(false)}>
+              Cancelar
+            </button>
+            <button
+              className="btn"
+              style={{ flex: 1, padding: '8px', background: 'var(--red)', color: 'white' }}
+              onClick={() => {
+                editarContrato(contrato.IdContrato, { activo: false, archivado: true })
+                setConfirmArchivar(false)
+              }}
+            >
+              Sí, archivar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Datos del contrato */}
       <div className="item-row">
@@ -460,42 +490,6 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
       <PanelActualizacionMonto contrato={contrato} />
       <HistorialICL historial={contrato.historialICL} />
 
-      {/* Archivar contrato */}
-      <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-        {!confirmArchivar ? (
-          <button
-            onClick={() => setConfirmArchivar(true)}
-            style={{ fontSize: 13, color: 'var(--text3)', width: '100%', textAlign: 'center', padding: '8px 0' }}
-          >
-            Archivar este contrato y no mostrarlo
-          </button>
-        ) : (
-          <div style={{ background: '#fee2e2', borderRadius: 8, padding: 14 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 10 }}>
-              ¿Archivar contrato? No aparecerá más como activo.
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                className="btn btn-secondary"
-                style={{ flex: 1, padding: '8px' }}
-                onClick={() => setConfirmArchivar(false)}
-              >
-                Cancelar
-              </button>
-              <button
-                className="btn"
-                style={{ flex: 1, padding: '8px', background: 'var(--red)', color: 'white' }}
-                onClick={() => {
-                  editarContrato(contrato.IdContrato, { activo: false, archivado: true })
-                  setConfirmArchivar(false)
-                }}
-              >
-                Sí, archivar
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
 
       {editando && (
         <EditarContratoModal
