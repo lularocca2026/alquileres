@@ -1,6 +1,8 @@
 import { useState, useEffect, Component } from 'react'
+import { supabase } from '../supabase.js'
 
-// ─── Error Boundary ────────────────────────────────────────────────────────────
+const BUCKET = 'archivos'
+
 class ErrorBoundary extends Component {
   state = { error: null }
   static getDerivedStateFromError(e) { return { error: e.message } }
@@ -9,10 +11,8 @@ class ErrorBoundary extends Component {
       <div style={{ padding: 24, color: 'var(--red)', fontSize: 14 }}>
         <div style={{ fontWeight: 600, marginBottom: 8 }}>Error al cargar archivos</div>
         <div style={{ fontSize: 12, color: 'var(--text3)' }}>{this.state.error}</div>
-        <button
-          onClick={() => this.setState({ error: null })}
-          style={{ marginTop: 12, padding: '8px 16px', background: 'var(--blue1)', color: 'white', borderRadius: 8, fontSize: 13 }}
-        >
+        <button onClick={() => this.setState({ error: null })}
+          style={{ marginTop: 12, padding: '8px 16px', background: 'var(--blue1)', color: 'white', borderRadius: 8, fontSize: 13 }}>
           Reintentar
         </button>
       </div>
@@ -21,226 +21,211 @@ class ErrorBoundary extends Component {
   }
 }
 
-// ─── Badge de tipos ────────────────────────────────────────────────────────────
-function TipoBadge({ tipos }) {
-  if (!tipos || typeof tipos !== 'object') return null
-  const iconos = { fotos: '📷', audios: '🎙', pdfs: '📄', videos: '🎬' }
+function tipoArchivo(nombre) {
+  const ext = nombre.split('.').pop().toLowerCase()
+  if (['jpg','jpeg','png','gif','webp','heic'].includes(ext)) return 'foto'
+  if (['mp3','ogg','opus','m4a','wav','aac'].includes(ext)) return 'audio'
+  if (['mp4','mov','avi','mkv'].includes(ext)) return 'video'
+  if (ext === 'pdf') return 'pdf'
+  if (['xlsx','xls'].includes(ext)) return 'excel'
+  return 'otro'
+}
+
+const ICONOS = { foto: '📷', audio: '🎙', video: '🎬', pdf: '📄', excel: '📊', otro: '📎' }
+
+function publicUrl(carpeta, archivo) {
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${carpeta}/${archivo}`)
+  return data.publicUrl
+}
+
+// ─── Vista de archivos de una carpeta ─────────────────────────────────────────
+function VistaArchivos({ carpeta, onVolver }) {
+  const [archivos, setArchivos] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [fotoAbierta, setFotoAbierta] = useState(null)
+
+  useEffect(() => {
+    supabase.storage.from(BUCKET).list(carpeta, { limit: 500 })
+      .then(({ data, error }) => {
+        if (error) throw error
+        setArchivos((data || []).filter(f => f.name && !f.id?.endsWith('/')))
+        setCargando(false)
+      })
+      .catch(() => setCargando(false))
+  }, [carpeta])
+
+  const fotos = archivos.filter(f => tipoArchivo(f.name) === 'foto')
+  const audios = archivos.filter(f => tipoArchivo(f.name) === 'audio')
+  const otros = archivos.filter(f => !['foto','audio'].includes(tipoArchivo(f.name)))
+
+  const titulo = carpeta.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
+
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-      {Object.entries(tipos).map(([tipo, cant]) => (
-        <span key={tipo} style={{
-          fontSize: 12, padding: '2px 8px', borderRadius: 20,
-          background: 'var(--surface2)', color: 'var(--text2)',
-        }}>
-          {iconos[tipo] || '📎'} {cant} {tipo}
-        </span>
-      ))}
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
+      <div className="header">
+        <button className="back-btn" onClick={onVolver}>←</button>
+        <h1 style={{ fontSize: 16 }}>{titulo}</h1>
+      </div>
+
+      <div className="content">
+        {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
+
+        {!cargando && archivos.length === 0 && (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin archivos en esta carpeta</div>
+        )}
+
+        {/* Fotos */}
+        {fotos.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 10 }}>
+              📷 Fotos ({fotos.length})
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+              {fotos.map(f => (
+                <div key={f.name} onClick={() => setFotoAbierta(f.name)}
+                  style={{ aspectRatio: '1', borderRadius: 6, overflow: 'hidden', cursor: 'pointer', background: 'var(--surface2)' }}>
+                  <img
+                    src={publicUrl(carpeta, f.name)}
+                    alt={f.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Audios */}
+        {audios.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 10 }}>
+              🎙 Audios ({audios.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {audios.map(f => (
+                <div key={f.name} style={{ background: 'var(--surface)', borderRadius: 8, padding: '10px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 6, wordBreak: 'break-all' }}>{f.name}</div>
+                  <audio controls src={publicUrl(carpeta, f.name)} style={{ width: '100%', height: 36 }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Otros (PDFs, videos, etc) */}
+        {otros.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 10 }}>
+              Otros ({otros.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {otros.map(f => {
+                const tipo = tipoArchivo(f.name)
+                return (
+                  <a key={f.name} href={publicUrl(carpeta, f.name)} target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                      background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)',
+                      color: 'var(--text)', textDecoration: 'none' }}>
+                    <span style={{ fontSize: 20 }}>{ICONOS[tipo]}</span>
+                    <span style={{ fontSize: 13, flex: 1, wordBreak: 'break-all' }}>{f.name}</span>
+                    <span style={{ fontSize: 12, color: 'var(--blue1)' }}>↗</span>
+                  </a>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Lightbox fotos */}
+      {fotoAbierta && (
+        <div onClick={() => setFotoAbierta(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 300,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <img src={publicUrl(carpeta, fotoAbierta)} alt=""
+            style={{ maxWidth: '100%', maxHeight: '100%', borderRadius: 8, objectFit: 'contain' }} />
+          <button onClick={() => setFotoAbierta(null)}
+            style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.15)',
+              border: 'none', color: 'white', fontSize: 24, width: 40, height: 40, borderRadius: '50%', cursor: 'pointer' }}>
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-// ─── Componente principal ──────────────────────────────────────────────────────
+// ─── Lista de carpetas (chats) ─────────────────────────────────────────────────
 function ArchivoMediaInner({ onVolver, chatInicial, onImportar }) {
-  const [chats, setChats] = useState([])
+  const [carpetas, setCarpetas] = useState([])
   const [cargando, setCargando] = useState(true)
-  const [generando, setGenerando] = useState(null)
-  const [resultado, setResultado] = useState(null)
-  const [error, setError] = useState(null)
-  const [carpetaRaiz, setCarpetaRaiz] = useState('')
-  const [toast, setToast] = useState(null)
-
-  function mostrarToast(msg) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 2500)
-  }
+  const [carpetaAbierta, setCarpetaAbierta] = useState(null)
 
   useEffect(() => {
-    fetch('/api/chats')
-      .then(r => r.json())
-      .then(d => { setChats(d.chats || []); setCargando(false) })
-      .catch(() => { setError('No se pudo conectar al backend. Asegurate de que INICIAR.bat esté corriendo.'); setCargando(false) })
-    fetch('/api/config')
-      .then(r => r.json())
-      .then(d => setCarpetaRaiz(d?.whatsapp_carpeta || ''))
-      .catch(() => {})
+    supabase.storage.from(BUCKET).list('', { limit: 100 })
+      .then(({ data, error }) => {
+        if (error) throw error
+        setCarpetas((data || []).filter(i => !i.metadata))
+        setCargando(false)
+      })
+      .catch(() => setCargando(false))
   }, [])
 
-  async function generarExcel(nombreChat) {
-    setGenerando(nombreChat)
-    setResultado(null)
-    try {
-      const r = await fetch(`/api/generar-excel/${encodeURIComponent(nombreChat)}`, { method: 'POST' })
-      const data = await r.json()
-      if (data.ok) {
-        setResultado({ chat: nombreChat })
-        setChats(prev => prev.map(c => c.nombre === nombreChat ? { ...c, excel_existe: true } : c))
-      } else {
-        setError(data.error)
-      }
-    } catch (e) {
-      setError(e.message)
+  // Si viene con chatInicial, busca la carpeta que coincide
+  useEffect(() => {
+    if (chatInicial && carpetas.length > 0) {
+      const match = carpetas.find(c => c.name.toLowerCase().includes(String(chatInicial).toLowerCase()))
+      if (match) setCarpetaAbierta(match.name)
     }
-    setGenerando(null)
+  }, [chatInicial, carpetas])
+
+  if (carpetaAbierta) {
+    return <VistaArchivos carpeta={carpetaAbierta} onVolver={() => setCarpetaAbierta(null)} />
   }
-
-  async function abrirCarpeta(nombreChat) {
-    try {
-      await fetch(`/api/abrir-carpeta/${encodeURIComponent(nombreChat)}`, { method: 'POST' })
-      mostrarToast('📁 Carpeta abierta en el Explorador')
-    } catch { mostrarToast('⚠ No se pudo abrir la carpeta') }
-  }
-
-  async function abrirExcel(nombreChat) {
-    try {
-      await fetch(`/api/abrir-excel/${encodeURIComponent(nombreChat)}`, { method: 'POST' })
-      mostrarToast('📊 Excel abierto')
-    } catch { mostrarToast('⚠ No se pudo abrir el Excel') }
-  }
-
-  // Título del header
-  const titulo = chatInicial
-    ? String(chatInicial)
-    : 'Archivos importados'
-
-  // Lista filtrada — busca el apellido dentro del nombre del chat
-  const lista = chatInicial
-    ? chats.filter(c => String(c?.nombre || '').toLowerCase().includes(String(chatInicial).toLowerCase()))
-    : chats
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-
-      {/* Toast */}
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
-          zIndex: 200, background: 'var(--navy)', color: 'white',
-          padding: '12px 24px', borderRadius: 30,
-          fontSize: 14, fontWeight: 600,
-          boxShadow: '0 4px 16px rgba(30,58,95,0.35)',
-          animation: 'fadeIn 0.2s ease',
-          whiteSpace: 'nowrap',
-        }}>
-          {toast}
-        </div>
-      )}
-      <style>{`@keyframes fadeIn { from { opacity:0; transform:translateX(-50%) translateY(8px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }`}</style>
-
       <div className="header">
         <button className="back-btn" onClick={onVolver}>←</button>
-        <h1>{titulo}</h1>
+        <h1>Archivos importados</h1>
       </div>
 
       <div className="content">
-        {error && <div className="alert alert-red">⚠ {error}</div>}
+        {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
 
-        {cargando && (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text3)' }}>Cargando...</div>
-        )}
-
-        {!cargando && lista.length === 0 && !error && (
+        {!cargando && carpetas.length === 0 && (
           <div className="card">
             <div style={{ padding: 24, textAlign: 'center' }}>
               <div style={{ fontSize: 42, marginBottom: 12 }}>📭</div>
-              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6, color: 'var(--text)' }}>
-                {chatInicial ? `Sin archivos de ${chatInicial}` : 'No hay chats importados todavía'}
-              </div>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>No hay archivos importados</div>
               <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 20 }}>
                 Exportá el chat de WhatsApp y subilo para ver fotos, audios y documentos.
               </div>
-              <button
-                className="btn btn-primary btn-full"
-                style={{ padding: '13px', fontSize: 14 }}
-                onClick={onImportar}
-              >
+              <button className="btn btn-primary btn-full" style={{ padding: 13, fontSize: 14 }} onClick={onImportar}>
                 📲 Importar ZIP de WhatsApp
               </button>
             </div>
           </div>
         )}
 
-        {lista.map(chat => {
-          if (!chat || !chat.nombre) return null
+        {carpetas.map(c => {
+          const nombre = c.name.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
           return (
-            <div key={chat.nombre} className="card">
-              <div style={{ padding: '14px 16px' }}>
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>
-                  {chat.nombre.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 6 }}>
-                  {chat.total || 0} archivos totales
-                </div>
-                <TipoBadge tipos={chat.tipos} />
-
-                <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-                  <button
-                    onClick={() => abrirCarpeta(chat.nombre)}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                      padding: '10px 14px', borderRadius: 10,
-                      background: 'var(--surface2)', border: '1px solid var(--border)',
-                      color: 'var(--navy)', cursor: 'pointer',
-                    }}
-                  >
-                    <span style={{ fontSize: 22 }}>📁</span>
-                    <span style={{ fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>Ver carpeta</span>
-                  </button>
-
-                  {chat.excel_existe && (
-                    <button
-                      onClick={() => abrirExcel(chat.nombre)}
-                      style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                        padding: '10px 14px', borderRadius: 10,
-                        background: 'var(--surface2)', border: '1px solid var(--border)',
-                        color: 'var(--navy)', cursor: 'pointer',
-                      }}
-                    >
-                      <span style={{ fontSize: 22 }}>📊</span>
-                      <span style={{ fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>Ver Excel</span>
-                    </button>
-                  )}
-
-                  <button
-                    className="btn btn-primary"
-                    style={{ flex: 1, padding: '8px 10px', fontSize: 12 }}
-                    onClick={() => generarExcel(chat.nombre)}
-                    disabled={generando === chat.nombre}
-                  >
-                    {generando === chat.nombre ? '⏳ Generando...' : chat.excel_existe ? 'Volver a crear Excel' : '📊 Crear Excel'}
-                  </button>
-                </div>
-
-                {generando === chat.nombre && (
-                  <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 8 }}>
-                    Transcribiendo audios... puede tardar unos minutos.
-                  </div>
-                )}
-
-                {resultado?.chat === chat.nombre && (
-                  <div style={{
-                    marginTop: 10, padding: '10px 12px', borderRadius: 8,
-                    background: '#dcfce7', border: '1px solid #86efac',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-                  }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>✅ Excel generado</div>
-                    <button onClick={() => abrirExcel(chat.nombre)}
-                      style={{ fontSize: 13, color: '#166534', fontWeight: 600, padding: '4px 10px', borderRadius: 6, background: '#bbf7d0' }}>
-                      Abrir →
-                    </button>
-                  </div>
-                )}
+            <div key={c.name} className="card" onClick={() => setCarpetaAbierta(c.name)}
+              style={{ padding: '14px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 10, background: 'var(--blue1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0
+              }}>📁</div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{nombre}</div>
+                <div style={{ fontSize: 12, color: 'var(--text3)' }}>Tocar para ver fotos y archivos</div>
               </div>
+              <div style={{ marginLeft: 'auto', color: 'var(--text3)', fontSize: 18 }}>›</div>
             </div>
           )
         })}
-
-        {!cargando && carpetaRaiz && (
-          <div style={{ padding: '8px 4px', fontSize: 12, color: 'var(--text3)', textAlign: 'center' }}>
-            Los archivos están en:<br />
-            <code style={{ fontSize: 11, wordBreak: 'break-all' }}>{carpetaRaiz}</code>
-          </div>
-        )}
       </div>
     </div>
   )
