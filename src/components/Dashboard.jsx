@@ -165,8 +165,8 @@ export default function Dashboard({ onAbrirPropiedad, onImportar, onArchivos, on
           <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 13 }} onClick={exportarJSON} title="Descargar copia de respaldo">
             ⤓
           </button>
-          <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 13 }} onClick={onInquilinos} title="Inquilinos">
-            👤
+          <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 13 }} onClick={onInquilinos}>
+            👤 Inquilinos
           </button>
           <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }} onClick={onImportar}>
             + WhatsApp
