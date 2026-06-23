@@ -92,6 +92,10 @@ export function DataProvider({ children }) {
   function editarInquilino(id, cambios) {
     actualizar({ ...estado, inquilinos: estado.inquilinos.map(i => i.IdInquilino === id ? { ...i, ...cambios } : i) })
   }
+  function agregarInquilino(inquilino) {
+    const nuevoId = Math.max(...estado.inquilinos.map(i => i.IdInquilino), 0) + 1
+    actualizar({ ...estado, inquilinos: [...estado.inquilinos, { ...inquilino, IdInquilino: nuevoId }] })
+  }
   // ── Contratos ──
   function editarContrato(id, cambios) {
     actualizar({ ...estado, contratos: estado.contratos.map(c => c.IdContrato === id ? { ...c, ...cambios } : c) })
@@ -161,7 +165,7 @@ export function DataProvider({ children }) {
     <DataContext.Provider value={{
       ...estado,
       sincronizado,
-      editarPropiedad, editarInquilino,
+      editarPropiedad, editarInquilino, agregarInquilino,
       editarContrato, agregarContrato,
       editarPago, agregarPago, eliminarPago,
       editarMantenimiento, agregarMantenimiento, eliminarMantenimiento,

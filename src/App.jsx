@@ -7,6 +7,7 @@ import PropiedadDetalle from './components/PropiedadDetalle.jsx'
 import ImportarZip from './components/ImportarZip.jsx'
 import ArchivoMedia from './components/ArchivoMedia.jsx'
 import AlertasICL from './components/ActualizacionICL.jsx'
+import Inquilinos from './components/Inquilinos.jsx'
 import './App.css'
 
 function AppInterna() {
@@ -31,6 +32,7 @@ function AppInterna() {
           onAbrirPropiedad={abrirPropiedad}
           onImportar={() => setVista('importar')}
           onArchivos={chat => { setChatSeleccionado(chat || null); setVista('archivos') }}
+          onInquilinos={() => setVista('inquilinos')}
         />
       )}
       {vista === 'propiedad' && (
@@ -45,6 +47,9 @@ function AppInterna() {
           onVolver={volver}
           onImportar={() => setVista('importar')}
         />
+      )}
+      {vista === 'inquilinos' && (
+        <Inquilinos onVolver={volver} />
       )}
       <AlertasICL />
     </div>

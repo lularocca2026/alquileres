@@ -143,7 +143,7 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
   )
 }
 
-export default function Dashboard({ onAbrirPropiedad, onImportar, onArchivos }) {
+export default function Dashboard({ onAbrirPropiedad, onImportar, onArchivos, onInquilinos }) {
   const { propiedades, exportarJSON, sincronizado } = useData()
   const [mostrarICL, setMostrarICL] = useState(false)
 
@@ -164,6 +164,9 @@ export default function Dashboard({ onAbrirPropiedad, onImportar, onArchivos }) 
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 13 }} onClick={exportarJSON} title="Descargar copia de respaldo">
             ⤓
+          </button>
+          <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 13 }} onClick={onInquilinos} title="Inquilinos">
+            👤
           </button>
           <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }} onClick={onImportar}>
             + WhatsApp
