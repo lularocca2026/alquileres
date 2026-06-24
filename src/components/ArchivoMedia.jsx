@@ -34,8 +34,11 @@ function tipoArchivo(nombre) {
 const ICONOS = { foto: '📷', audio: '🎙', video: '🎬', pdf: '📄', excel: '📊', otro: '📎' }
 
 function publicUrl(carpeta, archivo) {
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${carpeta}/${archivo}`)
-  return data.publicUrl
+  // Construir URL con encoding correcto para espacios y caracteres especiales
+  const base = import.meta.env.VITE_SUPABASE_URL
+  const path = carpeta.split('/').map(encodeURIComponent).join('/') +
+    '/' + archivo.split('/').map(encodeURIComponent).join('/')
+  return `${base}/storage/v1/object/public/${BUCKET}/${path}`
 }
 
 // ─── Vista de archivos de una carpeta ─────────────────────────────────────────
@@ -49,7 +52,17 @@ function VistaArchivos({ carpeta, onVolver }) {
     // Cargar lista de archivos
     supabase.storage.from(BUCKET).list(carpeta, { limit: 500 })
       .then(({ data }) => {
-        setArchivos((data || []).filter(f => f.name && f.name !== '_resumen.json'))
+        const EXCLUIR = ['_resumen.json', '_chat.txt']
+        const lista = (data || [])
+          .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
+        // Ordenar: excel/pdf arriba, luego resto por nombre
+        lista.sort((a, b) => {
+          const prioridad = n => { const t = tipoArchivo(n); return t === 'excel' ? 0 : t === 'pdf' ? 1 : 2 }
+          const pa = prioridad(a.name), pb = prioridad(b.name)
+          if (pa !== pb) return pa - pb
+          return a.name.localeCompare(b.name)
+        })
+        setArchivos(lista)
         setCargando(false)
       })
       .catch(() => setCargando(false))
@@ -61,6 +74,19 @@ function VistaArchivos({ carpeta, onVolver }) {
       .then(d => { if (d?.mensajes) setResumen(d) })
       .catch(() => {})
   }, [carpeta])
+
+  function descargarIndice() {
+    const filas = [['Nombre', 'Tipo', 'Link']]
+    for (const f of archivos) {
+      filas.push([f.name, tipoArchivo(f.name), publicUrl(carpeta, f.name)])
+    }
+    const csv = filas.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `archivos_${titulo.replace(/[^a-z0-9]/gi, '_').slice(0, 40)}.csv`
+    a.click()
+  }
 
   const titulo = carpeta.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
   const mensajesConArchivo = resumen?.mensajes?.filter(m => m.url) || []
@@ -97,6 +123,16 @@ function VistaArchivos({ carpeta, onVolver }) {
           <>
             {archivos.length === 0 && (
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin archivos</div>
+            )}
+            {archivos.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <button onClick={descargarIndice}
+                  style={{ width: '100%', padding: '10px 14px', background: '#1a7f45', color: 'white',
+                    border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  📊 Descargar índice con links ({archivos.length} archivos)
+                </button>
+              </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {archivos.map(f => {
