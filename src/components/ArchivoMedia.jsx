@@ -63,16 +63,35 @@ function VistaArchivos({ carpeta, onVolver }) {
   useEffect(() => {
     async function cargar() {
       const EXCLUIR = ['_resumen.json', '_chat.txt']
-      const [{ data: storageData }, resumenData] = await Promise.all([
+
+      const [{ data: storageData }, { data: resumenBlob }] = await Promise.all([
         supabase.storage.from(BUCKET).list(carpeta, { limit: 500 }),
-        fetch(publicUrl(carpeta, '_resumen.json')).then(r => r.ok ? r.json() : null).catch(() => null),
+        supabase.storage.from(BUCKET).download(`${carpeta}/_resumen.json`),
       ])
+
+      let resumenData = null
+      if (resumenBlob) {
+        try { resumenData = JSON.parse(await resumenBlob.text()) } catch {}
+      }
 
       const archivosStorage = (storageData || [])
         .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
 
+      // Generar URLs firmadas para todos los archivos del storage en una sola llamada
+      const paths = archivosStorage.map(f => `${carpeta}/${f.name}`)
+      const { data: signedData } = paths.length > 0
+        ? await supabase.storage.from(BUCKET).createSignedUrls(paths, 86400)
+        : { data: [] }
+
+      const urlMap = {}
+      for (const s of (signedData || [])) {
+        if (s.signedUrl) {
+          const filename = s.path.split('/').pop()
+          urlMap[filename.toLowerCase()] = s.signedUrl
+        }
+      }
+
       if (resumenData?.mensajes?.length) {
-        // Con resumen: mostrar todos los mensajes con contenido
         const nombresResumen = new Set(resumenData.mensajes.map(m => m.archivo?.toLowerCase()).filter(Boolean))
         const lista = [
           ...resumenData.mensajes
@@ -83,10 +102,9 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: m.autor || null,
               contenido: m.archivo || m.texto?.trim() || '',
               esArchivo: !!m.archivo,
-              url: m.url || null,
+              url: m.archivo ? (urlMap[m.archivo.toLowerCase()] || null) : null,
               ts: parseFechaChat(m.fecha_str),
             })),
-          // archivos en storage sin entrada en resumen
           ...archivosStorage
             .filter(f => !nombresResumen.has(f.name.toLowerCase()))
             .map(f => ({
@@ -95,20 +113,19 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: null,
               contenido: f.name,
               esArchivo: true,
-              url: publicUrl(carpeta, f.name),
+              url: urlMap[f.name.toLowerCase()] || null,
               ts: f.created_at ? new Date(f.created_at).getTime() : 0,
             })),
         ].sort((a, b) => a.ts - b.ts)
         setRegistros(lista)
       } else {
-        // Sin resumen: solo archivos del storage
         const lista = archivosStorage.map(f => ({
           tipo: tipoArchivo(f.name),
           fecha: f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : null,
           autor: null,
           contenido: f.name,
           esArchivo: true,
-          url: publicUrl(carpeta, f.name),
+          url: urlMap[f.name.toLowerCase()] || null,
           ts: f.created_at ? new Date(f.created_at).getTime() : 0,
         })).sort((a, b) => a.ts - b.ts)
         setRegistros(lista)
