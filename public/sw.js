@@ -1,4 +1,4 @@
-const CACHE = 'alquileres-v1'
+const CACHE = 'alquileres-v2'
 const SHELL = ['/', '/index.html', '/icono-192.png', '/icono-512.png']
 
 self.addEventListener('install', e => {
