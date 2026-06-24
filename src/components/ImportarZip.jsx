@@ -198,12 +198,12 @@ export default function ImportarZip({ onVolver }) {
         setProgreso('Extrayendo ZIP...')
         const zip = await JSZip.loadAsync(file)
 
+        // WhatsApp puede nombrar el archivo "_chat.txt" o "Chat de WhatsApp con Nombre.txt"
         let chatEntry = zip.file('_chat.txt')
-        if (!chatEntry) {
-          const encontrados = zip.file(/_chat\.txt$/i)
-          chatEntry = encontrados[0] || null
-        }
-        if (!chatEntry) throw new Error('No se encontró _chat.txt en el ZIP. Asegurate de exportar el chat de WhatsApp.')
+          || zip.file(/_chat\.txt$/i)[0]
+          || zip.file(/\.txt$/i)[0]
+          || null
+        if (!chatEntry) throw new Error('No se encontró el archivo de chat en el ZIP. Asegurate de exportar el chat de WhatsApp.')
 
         chatTexto = await chatEntry.async('text')
         carpeta = limpiarClave(file.name.replace(/\.zip$/i, ''))
