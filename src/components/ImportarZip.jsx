@@ -1,11 +1,52 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
+import JSZip from 'jszip'
+import { supabase } from '../supabase.js'
 import { useData } from '../DataContext.jsx'
 import { formatPesos, formatFecha } from '../utils.js'
 
-// ─── Estados del flujo ────────────────────────────────────────────────────────
-// instrucciones → subiendo → procesando → preview → confirmado
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// ─── Preview de un pago detectado ─────────────────────────────────────────────
+function limpiarClave(s) {
+  return s
+    .replace(/[°º]/g, '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function parsearChat(texto) {
+  texto = texto.replace(/^\uFEFF/, '')
+  const lineas = texto.split('\n')
+  const mensajes = []
+  let actual = null
+
+  const RE_AND = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),\s+(\d{1,2}:\d{2})\s+-\s+([^:]+):\s*(.*)/
+  const RE_IOS = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),\s+(\d{1,2}:\d{2}(?::\d{2})?)\]\s+([^:]+):\s*(.*)/
+  const RE_MEDIA = /^(.+\.(jpg|jpeg|png|gif|webp|heic|mp3|ogg|opus|m4a|wav|aac|mp4|mov|avi|pdf|xlsx?|docx?|zip))\s*(\(.*?\))?$/i
+
+  for (const linea of lineas) {
+    const m = linea.match(RE_AND) || linea.match(RE_IOS)
+    if (m) {
+      if (actual) mensajes.push(actual)
+      const [, fecha, hora, autor, contenido] = m
+      const mediaMatch = contenido.trim().match(RE_MEDIA)
+      actual = {
+        fecha_str: `${fecha} ${hora}`,
+        autor: autor.trim(),
+        texto: mediaMatch ? '' : contenido.trim(),
+        archivo: mediaMatch ? mediaMatch[1] : null,
+        url: null,
+      }
+    } else if (actual && linea.trim()) {
+      actual.texto += '\n' + linea.trim()
+    }
+  }
+  if (actual) mensajes.push(actual)
+  return mensajes
+}
+
+// ─── Preview de un item detectado ─────────────────────────────────────────────
 function FilaDetectada({ item, tipo, seleccionado, onToggle }) {
   const colorTipo = { pago: 'var(--green)', mantenimiento: 'var(--orange)', observacion: 'var(--accent)', inconsistencia: 'var(--red)' }
   const iconoTipo = { pago: '💰', mantenimiento: '🔧', observacion: '📝', inconsistencia: '⚠️' }
@@ -74,101 +115,52 @@ function FilaDetectada({ item, tipo, seleccionado, onToggle }) {
   )
 }
 
-// ─── Álbum de fotos ────────────────────────────────────────────────────────────
+// ─── Álbum de fotos (usando URLs de Supabase) ─────────────────────────────────
 function AlbumFotos({ fotos }) {
   const [abierta, setAbierta] = useState(null)
-
   if (!fotos?.length) return null
 
   return (
     <div>
-      <div style={{ fontWeight: 600, marginBottom: 10 }}>
-        📷 Fotos ({fotos.length})
-      </div>
+      <div style={{ fontWeight: 600, marginBottom: 10 }}>📷 Fotos ({fotos.length})</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
         {fotos.map((f, i) => (
-          <div
-            key={i}
-            onClick={() => setAbierta(f)}
-            style={{
-              aspectRatio: '1', borderRadius: 8, overflow: 'hidden',
-              background: 'var(--surface2)', cursor: 'pointer',
-            }}
-          >
-            {f.data ? (
-              <img src={f.data} alt={f.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 24 }}>
-                🎬
-              </div>
-            )}
+          <div key={i} onClick={() => setAbierta(f)}
+            style={{ aspectRatio: '1', borderRadius: 8, overflow: 'hidden', background: 'var(--surface2)', cursor: 'pointer' }}>
+            {f.url
+              ? <img src={f.url} alt={f.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: 24 }}>📷</div>
+            }
           </div>
         ))}
       </div>
 
-      {/* Lightbox */}
       {abierta && (
-        <div
-          onClick={() => setAbierta(null)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 200,
-            background: 'rgba(0,0,0,0.92)',
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            padding: 16,
-          }}
-        >
-          <button
-            onClick={() => setAbierta(null)}
-            style={{ position: 'absolute', top: 16, right: 16, color: 'white', fontSize: 28, background: 'none' }}
-          >
+        <div onClick={() => setAbierta(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.92)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <button onClick={() => setAbierta(null)}
+            style={{ position: 'absolute', top: 16, right: 16, color: 'white', fontSize: 28, background: 'none' }}>
             ×
           </button>
-          {abierta.data && (
-            <img
-              src={abierta.data}
-              alt={abierta.nombre}
+          {abierta.url && (
+            <img src={abierta.url} alt={abierta.nombre}
               style={{ maxWidth: '100%', maxHeight: '80dvh', borderRadius: 8, objectFit: 'contain' }}
-              onClick={e => e.stopPropagation()}
-            />
+              onClick={e => e.stopPropagation()} />
           )}
           <div style={{ color: 'white', fontSize: 13, marginTop: 12, opacity: 0.7 }}>{abierta.nombre}</div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             {fotos.indexOf(abierta) > 0 && (
-              <button
-                onClick={e => { e.stopPropagation(); setAbierta(fotos[fotos.indexOf(abierta) - 1]) }}
-                style={{ color: 'white', background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: 8 }}
-              >
-                ←
-              </button>
+              <button onClick={e => { e.stopPropagation(); setAbierta(fotos[fotos.indexOf(abierta) - 1]) }}
+                style={{ color: 'white', background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: 8 }}>←</button>
             )}
             {fotos.indexOf(abierta) < fotos.length - 1 && (
-              <button
-                onClick={e => { e.stopPropagation(); setAbierta(fotos[fotos.indexOf(abierta) + 1]) }}
-                style={{ color: 'white', background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: 8 }}
-              >
-                →
-              </button>
+              <button onClick={e => { e.stopPropagation(); setAbierta(fotos[fotos.indexOf(abierta) + 1]) }}
+                style={{ color: 'white', background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: 8 }}>→</button>
             )}
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-// ─── Transcripciones ──────────────────────────────────────────────────────────
-function Transcripciones({ lista }) {
-  if (!lista?.length) return null
-  return (
-    <div>
-      <div style={{ fontWeight: 600, marginBottom: 10 }}>🎙 Audios transcriptos ({lista.length})</div>
-      {lista.map((t, i) => (
-        <div key={i} style={{ background: 'var(--bg)', borderRadius: 8, padding: 12, marginBottom: 8 }}>
-          <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>{t.nombre}</div>
-          <div style={{ fontSize: 14 }}>{t.texto}</div>
-        </div>
-      ))}
     </div>
   )
 }
@@ -182,57 +174,165 @@ export default function ImportarZip({ onVolver }) {
   const [progreso, setProgreso] = useState('')
   const [seleccionados, setSeleccionados] = useState({})
   const [confirmados, setConfirmados] = useState(false)
-  const [backendDisponible, setBackendDisponible] = useState(null)
   const inputRef = useRef(null)
 
-  // Verificar si el backend local está corriendo
-  useState(() => {
-    fetch('/api/health', { signal: AbortSignal.timeout(2000) })
-      .then(r => setBackendDisponible(r.ok))
-      .catch(() => setBackendDisponible(false))
-  })
-
   function toggleItem(tipo, idx) {
-    const key = `${tipo}_${idx}`
-    setSeleccionados(s => ({ ...s, [key]: !s[key] }))
+    setSeleccionados(s => ({ ...s, [`${tipo}_${idx}`]: !s[`${tipo}_${idx}`] }))
   }
 
   function isSeleccionado(tipo, idx) {
-    return seleccionados[`${tipo}_${idx}`] ?? true // por defecto seleccionado
+    return seleccionados[`${tipo}_${idx}`] ?? true
   }
 
   async function procesarArchivo(file) {
     setFase('subiendo')
     setError(null)
-    setProgreso('Subiendo archivo...')
-
-    const formData = new FormData()
-    formData.append('archivo', file)
 
     try {
-      setProgreso('Analizando conversación con IA...')
-      const res = await fetch('/api/procesar-zip', {
-        method: 'POST',
-        body: formData,
-      })
+      let chatTexto, carpeta, mediaFiles = []
 
-      if (!res.ok) {
-        const err = await res.text()
-        throw new Error(err)
+      if (file.name.endsWith('.txt')) {
+        chatTexto = await file.text()
+        carpeta = limpiarClave(file.name.replace(/\.txt$/i, ''))
+      } else {
+        setProgreso('Extrayendo ZIP...')
+        const zip = await JSZip.loadAsync(file)
+
+        let chatEntry = zip.file('_chat.txt')
+        if (!chatEntry) {
+          const encontrados = zip.file(/_chat\.txt$/i)
+          chatEntry = encontrados[0] || null
+        }
+        if (!chatEntry) throw new Error('No se encontró _chat.txt en el ZIP. Asegurate de exportar el chat de WhatsApp.')
+
+        chatTexto = await chatEntry.async('text')
+        carpeta = limpiarClave(file.name.replace(/\.zip$/i, ''))
+        mediaFiles = Object.values(zip.files).filter(
+          f => !f.dir && !f.name.match(/(_chat\.txt|_resumen\.json)$/)
+        )
       }
 
-      const data = await res.json()
-      setResultado(data)
+      setProgreso('Analizando mensajes...')
+      const mensajes = parsearChat(chatTexto)
+      const urlMap = {}
+      let subidos = 0
 
-      // Seleccionar todo por defecto excepto inconsistencias
+      // ── Subir archivos de media ──────────────────────────────────────────────
+      if (mediaFiles.length > 0) {
+        // Construir mapa clave → entrada
+        const fileMap = {}
+        for (const f of mediaFiles) {
+          const nombreBase = limpiarClave(f.name.split('/').pop())
+          if (nombreBase) fileMap[`${carpeta}/${nombreBase}`] = { entrada: f, nombreOriginal: f.name.split('/').pop() }
+        }
+
+        const claves = Object.keys(fileMap)
+
+        // Pedir signed URLs en lotes de 25
+        const signedMap = {}
+        for (let i = 0; i < claves.length; i += 25) {
+          const lote = claves.slice(i, i + 25)
+          try {
+            const r = await fetch('/api/storage-upload-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ paths: lote }),
+            })
+            if (r.ok) Object.assign(signedMap, await r.json())
+          } catch {}
+        }
+
+        // Subir uno por uno mostrando progreso
+        let idx = 0
+        for (const [clave, { entrada, nombreOriginal }] of Object.entries(fileMap)) {
+          idx++
+          const nombreLimpio = clave.split('/').pop()
+          setProgreso(`Subiendo ${idx}/${claves.length}: ${nombreLimpio}`)
+
+          const signed = signedMap[clave]
+          if (!signed) continue
+
+          try {
+            const blob = await entrada.async('blob')
+            const { error: upErr } = await supabase.storage
+              .from('archivos')
+              .uploadToSignedUrl(signed.path, signed.token, blob)
+
+            if (!upErr) {
+              const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(clave)
+              urlMap[nombreOriginal] = urlData.publicUrl
+              urlMap[nombreLimpio] = urlData.publicUrl
+              subidos++
+            }
+          } catch {}
+        }
+      }
+
+      // ── Enriquecer mensajes con URLs ─────────────────────────────────────────
+      const mensajesConUrls = mensajes.map(m => ({
+        ...m,
+        url: m.archivo ? (urlMap[m.archivo] || urlMap[limpiarClave(m.archivo)] || null) : null,
+      }))
+
+      // ── Llamar a Claude ──────────────────────────────────────────────────────
+      setProgreso('Analizando con IA...')
+      const convTexto = mensajesConUrls
+        .filter(m => m.texto?.trim() || m.archivo)
+        .map(m => `[${m.fecha_str}] ${m.autor}: ${m.texto?.trim() || `<${m.archivo}>`}`)
+        .join('\n')
+        .slice(0, 20000)
+
+      let analisis = { pagos: [], mantenimiento: [], observaciones: [], inconsistencias: [] }
+      try {
+        const analisisRes = await fetch('/api/analizar-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversacion: convTexto, datos_existentes: {} }),
+        })
+        if (analisisRes.ok) {
+          const aData = await analisisRes.json()
+          if (aData.ok) analisis = aData.analisis
+        }
+      } catch {}
+
+      // ── Guardar _resumen.json ────────────────────────────────────────────────
+      try {
+        const resumenBlob = new Blob([JSON.stringify({
+          carpeta, total_mensajes: mensajes.length, mensajes: mensajesConUrls, analisis,
+          generado: new Date().toISOString(),
+        })], { type: 'application/json' })
+
+        const rPath = `${carpeta}/_resumen.json`
+        const rRes = await fetch('/api/storage-upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paths: [rPath] }),
+        })
+        if (rRes.ok) {
+          const rData = await rRes.json()
+          const signed = rData[rPath]
+          if (signed) {
+            await supabase.storage.from('archivos').uploadToSignedUrl(signed.path, signed.token, resumenBlob)
+          }
+        }
+      } catch {}
+
+      // ── Fotos para el preview ────────────────────────────────────────────────
+      const fotos = mensajesConUrls
+        .filter(m => m.url && m.archivo?.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i))
+        .map(m => ({ nombre: m.archivo, url: m.url }))
+
+      setResultado({ total_mensajes: mensajes.length, archivos_subidos: subidos, analisis, fotos })
+
       const sel = {}
-      data.analisis?.pagos?.forEach((_, i) => { sel[`pago_${i}`] = true })
-      data.analisis?.mantenimiento?.forEach((_, i) => { sel[`mantenimiento_${i}`] = true })
-      data.analisis?.observaciones?.forEach((_, i) => { sel[`observacion_${i}`] = true })
+      analisis.pagos?.forEach((_, i) => { sel[`pago_${i}`] = true })
+      analisis.mantenimiento?.forEach((_, i) => { sel[`mantenimiento_${i}`] = true })
+      analisis.observaciones?.forEach((_, i) => { sel[`observacion_${i}`] = true })
       setSeleccionados(sel)
-
       setFase('preview')
+
     } catch (e) {
+      console.error('Error procesando ZIP:', e)
       setError(e.message || 'Error procesando el archivo')
       setFase('instrucciones')
     }
@@ -242,7 +342,6 @@ export default function ImportarZip({ onVolver }) {
     const { analisis } = resultado
     const contratoActivo = contratos.find(c => c.activo && c.IdPropiedad > 0)
 
-    // Importar pagos seleccionados
     analisis?.pagos?.forEach((p, i) => {
       if (!isSeleccionado('pago', i)) return
       agregarPago({
@@ -258,7 +357,6 @@ export default function ImportarZip({ onVolver }) {
       })
     })
 
-    // Importar mantenimiento seleccionado
     analisis?.mantenimiento?.forEach((m, i) => {
       if (!isSeleccionado('mantenimiento', i)) return
       agregarMantenimiento({
@@ -270,7 +368,6 @@ export default function ImportarZip({ onVolver }) {
       })
     })
 
-    // Agregar observaciones seleccionadas a notas del contrato activo
     const obsSeleccionadas = analisis?.observaciones?.filter((_, i) => isSeleccionado('observacion', i))
     if (obsSeleccionadas?.length && contratoActivo) {
       const nuevasNotas = obsSeleccionadas
@@ -309,11 +406,15 @@ export default function ImportarZip({ onVolver }) {
                 {[
                   'Abrí el chat con el inquilino en WhatsApp',
                   'Tocá los 3 puntitos → Más → Exportar chat',
-                  'Elegí "Con archivos" para incluir fotos y audios',
+                  'Elegí "Con archivos" para incluir fotos y documentos',
                   'Compartí el .zip a esta app',
                 ].map((paso, i) => (
                   <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)',
+                      color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 700, fontSize: 13, flexShrink: 0,
+                    }}>
                       {i + 1}
                     </div>
                     <div style={{ fontSize: 14, paddingTop: 3 }}>{paso}</div>
@@ -323,29 +424,18 @@ export default function ImportarZip({ onVolver }) {
             </div>
 
             <div className="alert alert-yellow">
-              💡 La IA detecta pagos, reparaciones y observaciones. Los audios se transcriben automáticamente.
+              💡 La IA detecta pagos, reparaciones y observaciones. Los archivos se guardan en la nube.
             </div>
 
-            {backendDisponible === false && (
-              <div className="alert alert-red">
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠ Backend no disponible</div>
-                <div style={{ fontSize: 13 }}>
-                  Esta función requiere el backend local. Abrí <strong>INICIAR.bat</strong> en la computadora de Lucre y volvé a intentar.
-                </div>
-              </div>
-            )}
-
-            {error && backendDisponible !== false && (
-              <div className="alert alert-red">⚠ {error}</div>
-            )}
+            {error && <div className="alert alert-red">⚠ {error}</div>}
 
             <input ref={inputRef} type="file" accept=".zip,.txt" style={{ display: 'none' }}
               onChange={e => e.target.files[0] && procesarArchivo(e.target.files[0])}
             />
             <button
               className="btn btn-primary btn-full"
-              style={{ padding: '14px 16px', fontSize: 15, opacity: backendDisponible === false ? 0.5 : 1 }}
-              onClick={() => backendDisponible !== false && inputRef.current?.click()}
+              style={{ padding: '14px 16px', fontSize: 15 }}
+              onClick={() => inputRef.current?.click()}
             >
               📁 Seleccionar ZIP de WhatsApp
             </button>
@@ -353,11 +443,11 @@ export default function ImportarZip({ onVolver }) {
         )}
 
         {/* ── Procesando ── */}
-        {(fase === 'subiendo') && (
+        {fase === 'subiendo' && (
           <div style={{ textAlign: 'center', padding: '60px 16px' }}>
             <div style={{ fontSize: 44, marginBottom: 16, animation: 'spin 1s linear infinite' }}>⚙️</div>
             <div style={{ fontWeight: 600, marginBottom: 8 }}>{progreso}</div>
-            <div style={{ fontSize: 13, color: 'var(--text2)' }}>Puede tardar un minuto si hay muchos archivos</div>
+            <div style={{ fontSize: 13, color: 'var(--text2)' }}>Puede tardar un momento si hay muchos archivos</div>
             <style>{`@keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }`}</style>
           </div>
         )}
@@ -365,13 +455,18 @@ export default function ImportarZip({ onVolver }) {
         {/* ── Preview ── */}
         {fase === 'preview' && resultado && !confirmados && (
           <>
-            {/* Resumen */}
             <div className="card">
               <div style={{ padding: '12px 16px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 22, fontWeight: 700 }}>{resultado.total_mensajes}</div>
                   <div style={{ fontSize: 12, color: 'var(--text2)' }}>mensajes</div>
                 </div>
+                {resultado.archivos_subidos > 0 && (
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 22, fontWeight: 700 }}>{resultado.archivos_subidos}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text2)' }}>archivos</div>
+                  </div>
+                )}
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{resultado.analisis?.pagos?.length ?? 0}</div>
                   <div style={{ fontSize: 12, color: 'var(--text2)' }}>pagos</div>
@@ -384,33 +479,20 @@ export default function ImportarZip({ onVolver }) {
                   <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--accent)' }}>{resultado.analisis?.observaciones?.length ?? 0}</div>
                   <div style={{ fontSize: 12, color: 'var(--text2)' }}>observaciones</div>
                 </div>
-                {resultado.fotos?.length > 0 && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 700 }}>{resultado.fotos.length}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text2)' }}>fotos</div>
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Inconsistencias siempre arriba */}
             {resultado.analisis?.inconsistencias?.length > 0 && (
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--red)', marginBottom: 8 }}>
-                  ⚠ Posibles problemas
-                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--red)', marginBottom: 8 }}>⚠ Posibles problemas</div>
                 {resultado.analisis.inconsistencias.map((item, i) => (
-                  <FilaDetectada
-                    key={i}
+                  <FilaDetectada key={i}
                     item={{ descripcion: item.descripcion || item.descripcion_inconsistencia, ...item }}
-                    tipo="inconsistencia"
-                    seleccionado={false}
-                  />
+                    tipo="inconsistencia" seleccionado={false} />
                 ))}
               </div>
             )}
 
-            {/* Pagos */}
             {resultado.analisis?.pagos?.length > 0 && (
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>
@@ -419,64 +501,52 @@ export default function ImportarZip({ onVolver }) {
                 {resultado.analisis.pagos.map((item, i) => (
                   <FilaDetectada key={i} item={item} tipo="pago"
                     seleccionado={isSeleccionado('pago', i)}
-                    onToggle={() => toggleItem('pago', i)}
-                  />
+                    onToggle={() => toggleItem('pago', i)} />
                 ))}
               </div>
             )}
 
-            {/* Mantenimiento */}
             {resultado.analisis?.mantenimiento?.length > 0 && (
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>Mantenimiento</div>
                 {resultado.analisis.mantenimiento.map((item, i) => (
                   <FilaDetectada key={i} item={item} tipo="mantenimiento"
                     seleccionado={isSeleccionado('mantenimiento', i)}
-                    onToggle={() => toggleItem('mantenimiento', i)}
-                  />
+                    onToggle={() => toggleItem('mantenimiento', i)} />
                 ))}
               </div>
             )}
 
-            {/* Observaciones */}
             {resultado.analisis?.observaciones?.length > 0 && (
               <div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>Observaciones</div>
                 {resultado.analisis.observaciones.map((item, i) => (
                   <FilaDetectada key={i} item={item} tipo="observacion"
                     seleccionado={isSeleccionado('observacion', i)}
-                    onToggle={() => toggleItem('observacion', i)}
-                  />
+                    onToggle={() => toggleItem('observacion', i)} />
                 ))}
               </div>
             )}
 
-            {/* Transcripciones */}
-            <Transcripciones lista={resultado.transcripciones} />
-
-            {/* Álbum de fotos */}
             <AlbumFotos fotos={resultado.fotos} />
 
-            {totalDetectado === 0 && !resultado.fotos?.length && !resultado.transcripciones?.length && (
+            {totalDetectado === 0 && !resultado.fotos?.length && (
               <div style={{ background: 'var(--bg)', borderRadius: 10, padding: 16, textAlign: 'center' }}>
                 <div style={{ fontSize: 20, marginBottom: 8 }}>🔍</div>
                 <div style={{ fontWeight: 500, marginBottom: 4 }}>No se detectaron eventos automáticamente</div>
                 <div style={{ fontSize: 13, color: 'var(--text2)' }}>
-                  La conversación puede no tener menciones de pagos o mantenimiento, o el formato no fue reconocido.
+                  {resultado.archivos_subidos > 0
+                    ? `Se subieron ${resultado.archivos_subidos} archivos. Podés verlos en la sección Archivos.`
+                    : 'La conversación puede no tener menciones de pagos o mantenimiento.'}
                 </div>
               </div>
             )}
 
-            {/* Botones — siempre visibles */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, position: 'sticky', bottom: 0, background: 'var(--bg)', paddingBottom: 16, paddingTop: 8 }}>
-              <button
-                className="btn btn-primary btn-full"
-                style={{ padding: '14px' }}
-                onClick={confirmarImportacion}
-              >
+              <button className="btn btn-primary btn-full" style={{ padding: '14px' }} onClick={confirmarImportacion}>
                 {totalDetectado > 0
                   ? `Confirmar importación (${totalDetectado} items)`
-                  : 'Confirmar y guardar fotos/audios'}
+                  : `Confirmar y ver archivos`}
               </button>
               <button className="btn btn-secondary btn-full" style={{ padding: '12px' }}
                 onClick={() => { setFase('instrucciones'); setResultado(null) }}>
@@ -492,7 +562,7 @@ export default function ImportarZip({ onVolver }) {
             <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
             <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>¡Datos importados!</div>
             <div style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 32 }}>
-              Los pagos y observaciones ya están en la app. Recordá guardar el JSON.
+              Los pagos y observaciones ya están en la app. Los archivos están disponibles en la sección Archivos.
             </div>
             <button className="btn btn-primary" style={{ padding: '12px 32px' }} onClick={onVolver}>
               Volver al inicio
