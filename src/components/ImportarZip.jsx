@@ -218,55 +218,26 @@ export default function ImportarZip({ onVolver, onArchivos }) {
       const urlMap = {}
       let subidos = 0
 
-      // ── Subir archivos de media ──────────────────────────────────────────────
-      if (mediaFiles.length > 0) {
-        // Construir mapa clave → entrada
-        const fileMap = {}
-        for (const f of mediaFiles) {
-          const nombreBase = limpiarClave(f.name.split('/').pop())
-          if (nombreBase) fileMap[`${carpeta}/${nombreBase}`] = { entrada: f, nombreOriginal: f.name.split('/').pop() }
-        }
-
-        const claves = Object.keys(fileMap)
-
-        // Pedir signed URLs en lotes de 25
-        const signedMap = {}
-        for (let i = 0; i < claves.length; i += 25) {
-          const lote = claves.slice(i, i + 25)
-          try {
-            const r = await fetch('/api/storage-upload-url', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ paths: lote }),
-            })
-            if (r.ok) Object.assign(signedMap, await r.json())
-          } catch {}
-        }
-
-        // Subir uno por uno mostrando progreso
-        let idx = 0
-        for (const [clave, { entrada, nombreOriginal }] of Object.entries(fileMap)) {
-          idx++
-          const nombreLimpio = clave.split('/').pop()
-          setProgreso(`Subiendo ${idx}/${claves.length}: ${nombreLimpio}`)
-
-          const signed = signedMap[clave]
-          if (!signed) continue
-
-          try {
-            const blob = await entrada.async('blob')
-            const { error: upErr } = await supabase.storage
-              .from('archivos')
-              .uploadToSignedUrl(signed.path, signed.token, blob)
-
-            if (!upErr) {
-              const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(clave)
-              urlMap[nombreOriginal] = urlData.publicUrl
-              urlMap[nombreLimpio] = urlData.publicUrl
-              subidos++
-            }
-          } catch {}
-        }
+      // ── Subir archivos de media directamente con sesión autenticada ──────────
+      let idx = 0
+      for (const f of mediaFiles) {
+        const nombreBase = limpiarClave(f.name.split('/').pop())
+        if (!nombreBase) continue
+        const clave = `${carpeta}/${nombreBase}`
+        idx++
+        setProgreso(`Subiendo ${idx}/${mediaFiles.length}: ${nombreBase}`)
+        try {
+          const blob = await f.async('blob')
+          const { error: upErr } = await supabase.storage
+            .from('archivos')
+            .upload(clave, blob, { upsert: true })
+          if (!upErr) {
+            const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(clave)
+            urlMap[f.name.split('/').pop()] = urlData.publicUrl
+            urlMap[nombreBase] = urlData.publicUrl
+            subidos++
+          }
+        } catch {}
       }
 
       // ── Enriquecer mensajes con URLs ─────────────────────────────────────────
@@ -283,20 +254,9 @@ export default function ImportarZip({ onVolver, onArchivos }) {
           carpeta, total_mensajes: mensajes.length, mensajes: mensajesConUrls, analisis,
           generado: new Date().toISOString(),
         })], { type: 'application/json' })
-
-        const rPath = `${carpeta}/_resumen.json`
-        const rRes = await fetch('/api/storage-upload-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paths: [rPath] }),
-        })
-        if (rRes.ok) {
-          const rData = await rRes.json()
-          const signed = rData[rPath]
-          if (signed) {
-            await supabase.storage.from('archivos').uploadToSignedUrl(signed.path, signed.token, resumenBlob)
-          }
-        }
+        await supabase.storage
+          .from('archivos')
+          .upload(`${carpeta}/_resumen.json`, resumenBlob, { upsert: true })
       } catch {}
 
       // ── Fotos para el preview ────────────────────────────────────────────────
