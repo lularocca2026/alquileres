@@ -607,8 +607,10 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
   const contratosAnteriores = todosLosContratos.filter(c => !c.activo)
   const inquilino = contrato ? getInquilino(contrato.IdInquilino) : null
 
+  const tabEfectivo = (!contrato && tab === 'pagos') ? 'contrato' : tab
+
   const tabs = [
-    { id: 'pagos', label: 'Pagos' },
+    ...(contrato ? [{ id: 'pagos', label: 'Pagos' }] : []),
     { id: 'contrato', label: 'Contrato' },
     { id: 'mantenimiento', label: 'Mantenimiento' },
   ]
@@ -667,81 +669,69 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
           </div>
         )}
 
-        {/* Sin contrato activo → opciones */}
-        {!contrato && (
-          <div className="card">
-            <div style={{ padding: 16 }}>
-              <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--orange)' }}>
-                📋 Sin contrato activo
-              </div>
+        <div className="tabs">
+          {tabs.map(t => (
+            <button key={t.id} className={`tab ${tabEfectivo === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-              {/* Nuevo contrato */}
-              <button
-                className="btn btn-primary btn-full"
-                style={{ marginBottom: 10 }}
-                onClick={() => setNuevoContrato(true)}
-              >
-                + Crear nuevo contrato
-              </button>
-
-              {/* Contratos anteriores para reactivar */}
-              {contratosAnteriores.length > 0 && (
-                <>
-                  <div style={{ fontSize: 12, color: 'var(--text3)', margin: '12px 0 8px', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
-                    Contratos anteriores
-                  </div>
-                  {contratosAnteriores.map(c => {
-                    const inq = getInquilino(c.IdInquilino)
-                    return (
-                      <div key={c.IdContrato} style={{
-                        background: 'var(--bg)', borderRadius: 10, padding: '12px 14px',
-                        marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10,
-                      }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 500, fontSize: 14 }}>{inq?.Apellido || 'Inquilino'}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text3)' }}>
-                            {formatFecha(c.FechaInicio)} → {formatFecha(c.FechaFin)}
-                            {' · '}{formatPesos(c.MontoInicial)}
-                          </div>
-                          {c.archivado && (
-                            <span className="badge badge-gray" style={{ marginTop: 4, fontSize: 11 }}>Archivado</span>
-                          )}
-                        </div>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '6px 12px', fontSize: 13, flexShrink: 0 }}
-                          onClick={() => editarContrato(c.IdContrato, { activo: true, archivado: false })}
-                        >
-                          Reactivar
-                        </button>
-                      </div>
-                    )
-                  })}
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {contrato && (
-          <>
-            <div className="tabs">
-              {tabs.map(t => (
-                <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
-                  {t.label}
+        <div className="card">
+          <div className="card-body" style={{ paddingTop: 16 }}>
+            {tabEfectivo === 'pagos' && contrato && <TabPagos contrato={contrato} />}
+            {tabEfectivo === 'contrato' && contrato && <TabContrato contrato={contrato} propiedad={propiedad} onNuevoContrato={agregarContrato} />}
+            {tabEfectivo === 'contrato' && !contrato && (
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 12, color: 'var(--orange)' }}>
+                  📋 Sin contrato activo
+                </div>
+                <button
+                  className="btn btn-primary btn-full"
+                  style={{ marginBottom: 10 }}
+                  onClick={() => setNuevoContrato(true)}
+                >
+                  + Crear nuevo contrato
                 </button>
-              ))}
-            </div>
-
-            <div className="card">
-              <div className="card-body" style={{ paddingTop: 16 }}>
-                {tab === 'pagos' && <TabPagos contrato={contrato} />}
-                {tab === 'contrato' && <TabContrato contrato={contrato} propiedad={propiedad} onNuevoContrato={agregarContrato} />}
-                {tab === 'mantenimiento' && <TabMantenimiento idPropiedad={idPropiedad} />}
+                {contratosAnteriores.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 12, color: 'var(--text3)', margin: '12px 0 8px', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
+                      Contratos anteriores
+                    </div>
+                    {contratosAnteriores.map(c => {
+                      const inq = getInquilino(c.IdInquilino)
+                      return (
+                        <div key={c.IdContrato} style={{
+                          background: 'var(--bg)', borderRadius: 10, padding: '12px 14px',
+                          marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10,
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 500, fontSize: 14 }}>{inq?.Apellido || 'Inquilino'}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text3)' }}>
+                              {formatFecha(c.FechaInicio)} → {formatFecha(c.FechaFin)}
+                              {' · '}{formatPesos(c.MontoInicial)}
+                            </div>
+                            {c.archivado && (
+                              <span className="badge badge-gray" style={{ marginTop: 4, fontSize: 11 }}>Archivado</span>
+                            )}
+                          </div>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '6px 12px', fontSize: 13, flexShrink: 0 }}
+                            onClick={() => editarContrato(c.IdContrato, { activo: true, archivado: false })}
+                          >
+                            Reactivar
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
               </div>
-            </div>
-          </>
-        )}
+            )}
+            {tabEfectivo === 'mantenimiento' && <TabMantenimiento idPropiedad={idPropiedad} />}
+          </div>
+        </div>
       </div>
 
       {editandoInq && inquilino && (
