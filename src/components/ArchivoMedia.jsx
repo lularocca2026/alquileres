@@ -41,6 +41,15 @@ function publicUrl(carpeta, archivo) {
   return `${base}/storage/v1/object/public/${BUCKET}/${path}`
 }
 
+function parseFechaChat(s) {
+  if (!s) return 0
+  const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})/)
+  if (!m) return 0
+  const [, d, mo, y, h, mi] = m
+  const year = y.length === 2 ? 2000 + parseInt(y) : parseInt(y)
+  return new Date(year, parseInt(mo) - 1, parseInt(d), parseInt(h), parseInt(mi)).getTime()
+}
+
 // ─── Vista de archivos de una carpeta ─────────────────────────────────────────
 function VistaArchivos({ carpeta, onVolver }) {
   const [registros, setRegistros] = useState([])
@@ -65,17 +74,23 @@ function VistaArchivos({ carpeta, onVolver }) {
           nombre: m.archivo || '',
           tipo: tipoArchivo(m.archivo || ''),
           fecha: m.fecha_str || null,
+          autor: m.autor || null,
+          texto: m.texto?.trim() || null,
           url: m.url,
+          ts: parseFechaChat(m.fecha_str),
         })),
         ...archivosStorage
           .filter(f => !nombresConFecha.has(f.name.toLowerCase()))
           .map(f => ({
             nombre: f.name,
             tipo: tipoArchivo(f.name),
-            fecha: null,
+            fecha: f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : null,
+            autor: null,
+            texto: null,
             url: publicUrl(carpeta, f.name),
+            ts: f.created_at ? new Date(f.created_at).getTime() : 0,
           })),
-      ]
+      ].sort((a, b) => a.ts - b.ts)
 
       setRegistros(lista)
       setCargando(false)
@@ -93,7 +108,7 @@ function VistaArchivos({ carpeta, onVolver }) {
         {!cargando && <span style={{ fontSize: 13, color: 'var(--text3)' }}>{registros.length}</span>}
       </div>
 
-      <div className="content">
+      <div className="content" style={{ padding: 0 }}>
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
 
         {!cargando && registros.length === 0 && (
@@ -102,20 +117,27 @@ function VistaArchivos({ carpeta, onVolver }) {
 
         {registros.map((r, i) => (
           <div key={i} style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
+            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
             borderBottom: '1px solid var(--border)',
           }}>
-            <span style={{ fontSize: 20, flexShrink: 0 }}>{ICONOS[r.tipo]}</span>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>{ICONOS[r.tipo]}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 2 }}>
-                {r.fecha || '—'} · <span style={{ fontWeight: 600, textTransform: 'uppercase' }}>{r.tipo}</span>
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <span>{r.fecha || '—'}</span>
+                <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>{r.tipo}</span>
+                {r.autor && <span style={{ color: 'var(--text2)', fontWeight: 600 }}>{r.autor.split(/[\s,]+/)[0]}</span>}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {r.nombre}
               </div>
+              {r.texto && (
+                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {r.texto}
+                </div>
+              )}
             </div>
             <a href={r.url} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', flexShrink: 0, textDecoration: 'none', padding: '6px 10px' }}>
+              style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', flexShrink: 0, textDecoration: 'none', paddingLeft: 10 }}>
               Ver
             </a>
           </div>
