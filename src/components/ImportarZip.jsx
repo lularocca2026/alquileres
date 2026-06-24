@@ -274,26 +274,7 @@ export default function ImportarZip({ onVolver }) {
         url: m.archivo ? (urlMap[m.archivo] || urlMap[limpiarClave(m.archivo)] || null) : null,
       }))
 
-      // ── Llamar a Claude ──────────────────────────────────────────────────────
-      setProgreso('Analizando con IA...')
-      const convTexto = mensajesConUrls
-        .filter(m => m.texto?.trim() || m.archivo)
-        .map(m => `[${m.fecha_str}] ${m.autor}: ${m.texto?.trim() || `<${m.archivo}>`}`)
-        .join('\n')
-        .slice(0, 20000)
-
-      let analisis = { pagos: [], mantenimiento: [], observaciones: [], inconsistencias: [] }
-      try {
-        const analisisRes = await fetch('/api/analizar-chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversacion: convTexto, datos_existentes: {} }),
-        })
-        if (analisisRes.ok) {
-          const aData = await analisisRes.json()
-          if (aData.ok) analisis = aData.analisis
-        }
-      } catch {}
+      const analisis = { pagos: [], mantenimiento: [], observaciones: [], inconsistencias: [] }
 
       // ── Guardar _resumen.json ────────────────────────────────────────────────
       try {
