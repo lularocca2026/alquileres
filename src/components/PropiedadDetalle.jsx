@@ -593,7 +593,7 @@ function EditarInquilinoModal({ inquilino, onGuardar, onCerrar }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function PropiedadDetalle({ idPropiedad, onVolver }) {
+export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) {
   const { getPropiedad, getContratoActivo, getContratosPropiedad, getInquilino, editarInquilino, editarContrato, agregarContrato, inquilinos } = useData()
   const [tab, setTab] = useState('pagos')
   const [editandoInq, setEditandoInq] = useState(false)
@@ -656,6 +656,12 @@ export default function PropiedadDetalle({ idPropiedad, onVolver }) {
                 <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => setEditandoInq(true)}>
                   ✏
                 </button>
+                {onArchivos && (
+                  <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: 12 }}
+                    onClick={() => onArchivos(inquilino.Apellido)}>
+                    📁
+                  </button>
+                )}
               </div>
             </div>
           </div>

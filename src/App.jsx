@@ -36,7 +36,11 @@ function AppInterna() {
         />
       )}
       {vista === 'propiedad' && (
-        <PropiedadDetalle idPropiedad={propiedadId} onVolver={volver} />
+        <PropiedadDetalle
+          idPropiedad={propiedadId}
+          onVolver={volver}
+          onArchivos={nombre => { setChatSeleccionado(nombre || null); setVista('archivos') }}
+        />
       )}
       {vista === 'importar' && (
         <ImportarZip onVolver={volver} />

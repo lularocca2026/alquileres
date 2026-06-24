@@ -171,6 +171,7 @@ function ArchivoMediaInner({ onVolver, chatInicial, onImportar }) {
   const [carpetas, setCarpetas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [carpetaAbierta, setCarpetaAbierta] = useState(null)
+  const [sinCoincidencia, setSinCoincidencia] = useState(false)
 
   useEffect(() => {
     supabase.storage.from(BUCKET).list('', { limit: 100 })
@@ -184,9 +185,16 @@ function ArchivoMediaInner({ onVolver, chatInicial, onImportar }) {
 
   // Si viene con chatInicial, busca la carpeta que coincide
   useEffect(() => {
-    if (chatInicial && carpetas.length > 0) {
-      const match = carpetas.find(c => c.name.toLowerCase().includes(String(chatInicial).toLowerCase()))
-      if (match) setCarpetaAbierta(match.name)
+    if (!chatInicial || carpetas.length === 0) return
+    // Busca palabras del apellido por separado para mayor flexibilidad
+    const palabras = String(chatInicial).toLowerCase().split(/\s+/).filter(p => p.length > 2)
+    const match = carpetas.find(c =>
+      palabras.some(p => c.name.toLowerCase().includes(p))
+    )
+    if (match) {
+      setCarpetaAbierta(match.name)
+    } else {
+      setSinCoincidencia(true)
     }
   }, [chatInicial, carpetas])
 
@@ -198,11 +206,17 @@ function ArchivoMediaInner({ onVolver, chatInicial, onImportar }) {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="header">
         <button className="back-btn" onClick={onVolver}>←</button>
-        <h1>Archivos importados</h1>
+        <h1>{chatInicial ? `Archivos de ${chatInicial}` : 'Archivos importados'}</h1>
       </div>
 
       <div className="content">
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
+
+        {sinCoincidencia && chatInicial && (
+          <div className="alert alert-yellow">
+            No se encontró un chat con "{chatInicial}". Tocá la carpeta correcta abajo.
+          </div>
+        )}
 
         {!cargando && carpetas.length === 0 && (
           <div className="card">
