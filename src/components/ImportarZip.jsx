@@ -182,7 +182,15 @@ export default function ImportarZip({ onVolver }) {
   const [progreso, setProgreso] = useState('')
   const [seleccionados, setSeleccionados] = useState({})
   const [confirmados, setConfirmados] = useState(false)
+  const [backendDisponible, setBackendDisponible] = useState(null)
   const inputRef = useRef(null)
+
+  // Verificar si el backend local está corriendo
+  useState(() => {
+    fetch('/api/health', { signal: AbortSignal.timeout(2000) })
+      .then(r => setBackendDisponible(r.ok))
+      .catch(() => setBackendDisponible(false))
+  })
 
   function toggleItem(tipo, idx) {
     const key = `${tipo}_${idx}`
@@ -318,15 +326,27 @@ export default function ImportarZip({ onVolver }) {
               💡 La IA detecta pagos, reparaciones y observaciones. Los audios se transcriben automáticamente.
             </div>
 
-            {error && (
+            {backendDisponible === false && (
+              <div className="alert alert-red">
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>⚠ Backend no disponible</div>
+                <div style={{ fontSize: 13 }}>
+                  Esta función requiere el backend local. Abrí <strong>INICIAR.bat</strong> en la computadora de Lucre y volvé a intentar.
+                </div>
+              </div>
+            )}
+
+            {error && backendDisponible !== false && (
               <div className="alert alert-red">⚠ {error}</div>
             )}
 
             <input ref={inputRef} type="file" accept=".zip,.txt" style={{ display: 'none' }}
               onChange={e => e.target.files[0] && procesarArchivo(e.target.files[0])}
             />
-            <button className="btn btn-primary btn-full" style={{ padding: '14px 16px', fontSize: 15 }}
-              onClick={() => inputRef.current?.click()}>
+            <button
+              className="btn btn-primary btn-full"
+              style={{ padding: '14px 16px', fontSize: 15, opacity: backendDisponible === false ? 0.5 : 1 }}
+              onClick={() => backendDisponible !== false && inputRef.current?.click()}
+            >
               📁 Seleccionar ZIP de WhatsApp
             </button>
           </>
