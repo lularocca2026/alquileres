@@ -167,54 +167,74 @@ function VistaArchivos({ carpeta, onVolver }) {
 }
 
 // ─── Lista de carpetas (chats) ─────────────────────────────────────────────────
+function palabrasMatch(nombre, filtro) {
+  // Divide por espacios y guiones, filtra palabras > 2 letras
+  const palabras = String(filtro).toLowerCase().split(/[\s\-,]+/).filter(p => p.length > 2)
+  const target = nombre.toLowerCase()
+  return palabras.some(p => target.includes(p))
+}
+
 function ArchivoMediaInner({ onVolver, chatInicial, onImportar }) {
   const [carpetas, setCarpetas] = useState([])
   const [cargando, setCargando] = useState(true)
   const [carpetaAbierta, setCarpetaAbierta] = useState(null)
-  const [sinCoincidencia, setSinCoincidencia] = useState(false)
+  const [mostrarTodas, setMostrarTodas] = useState(false)
 
   useEffect(() => {
     supabase.storage.from(BUCKET).list('', { limit: 100 })
       .then(({ data, error }) => {
         if (error) throw error
-        setCarpetas((data || []).filter(i => !i.metadata))
+        const todas = (data || []).filter(i => !i.metadata)
+        setCarpetas(todas)
         setCargando(false)
+        // Auto-abrir solo si hay exactamente 1 coincidencia
+        if (chatInicial) {
+          const matches = todas.filter(c => palabrasMatch(c.name, chatInicial))
+          if (matches.length === 1) setCarpetaAbierta(matches[0].name)
+        }
       })
       .catch(() => setCargando(false))
   }, [])
-
-  // Si viene con chatInicial, busca la carpeta que coincide
-  useEffect(() => {
-    if (!chatInicial || carpetas.length === 0) return
-    // Busca palabras del apellido por separado para mayor flexibilidad
-    const palabras = String(chatInicial).toLowerCase().split(/\s+/).filter(p => p.length > 2)
-    const match = carpetas.find(c =>
-      palabras.some(p => c.name.toLowerCase().includes(p))
-    )
-    if (match) {
-      setCarpetaAbierta(match.name)
-    } else {
-      setSinCoincidencia(true)
-    }
-  }, [chatInicial, carpetas])
 
   if (carpetaAbierta) {
     return <VistaArchivos carpeta={carpetaAbierta} onVolver={() => setCarpetaAbierta(null)} />
   }
 
+  const carpetasFiltradas = chatInicial && !mostrarTodas
+    ? carpetas.filter(c => palabrasMatch(c.name, chatInicial))
+    : carpetas
+
+  const sinCoincidencia = !cargando && chatInicial && !mostrarTodas && carpetasFiltradas.length === 0
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="header">
         <button className="back-btn" onClick={onVolver}>←</button>
-        <h1>{chatInicial ? `Archivos de ${chatInicial}` : 'Archivos importados'}</h1>
+        <h1>{chatInicial && !mostrarTodas ? `Archivos · ${chatInicial}` : 'Archivos importados'}</h1>
       </div>
 
       <div className="content">
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
 
-        {sinCoincidencia && chatInicial && (
+        {sinCoincidencia && (
           <div className="alert alert-yellow">
-            No se encontró un chat con "{chatInicial}". Tocá la carpeta correcta abajo.
+            No se encontró chat para "{chatInicial}".{' '}
+            <span onClick={() => setMostrarTodas(true)}
+              style={{ fontWeight: 600, color: 'var(--blue1)', cursor: 'pointer', textDecoration: 'underline' }}>
+              Ver todos
+            </span>
+          </div>
+        )}
+
+        {!sinCoincidencia && chatInicial && !mostrarTodas && carpetasFiltradas.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: 'var(--text3)' }}>
+              {carpetasFiltradas.length} chat{carpetasFiltradas.length > 1 ? 's' : ''} encontrado{carpetasFiltradas.length > 1 ? 's' : ''}
+            </span>
+            <button onClick={() => setMostrarTodas(true)}
+              style={{ fontSize: 12, color: 'var(--blue1)', background: 'none', border: 'none', cursor: 'pointer' }}>
+              Ver todos
+            </button>
           </div>
         )}
 
@@ -233,7 +253,7 @@ function ArchivoMediaInner({ onVolver, chatInicial, onImportar }) {
           </div>
         )}
 
-        {carpetas.map(c => {
+        {carpetasFiltradas.map(c => {
           const nombre = c.name.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
           return (
             <div key={c.name} className="card" onClick={() => setCarpetaAbierta(c.name)}
