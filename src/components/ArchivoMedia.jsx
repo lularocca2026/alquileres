@@ -136,8 +136,8 @@ function VistaArchivos({ carpeta, onVolver }) {
       const archivosStorage = (storageData || [])
         .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
 
-      // Mapear nombre de chat → nombre en storage (limpiarNombre) para BtnVer
-      // No pre-generamos URLs; cada BtnVer las genera al hacer click
+      // Mapear nombre de chat → nombre real en storage.
+      // Solo los archivos que existen en storage tendrán botón "Ver".
       const nombreStorageMap = {}
       for (const f of archivosStorage) {
         nombreStorageMap[f.name.toLowerCase()] = f.name
@@ -145,11 +145,10 @@ function VistaArchivos({ carpeta, onVolver }) {
       }
 
       function storagePath(archivo) {
-        // Devuelve el path completo en storage para el archivo del chat
+        // Devuelve el path solo si el archivo existe realmente en storage; si no, null
         const nombre = nombreStorageMap[archivo.toLowerCase()]
           || nombreStorageMap[limpiarNombre(archivo).toLowerCase()]
-          || limpiarNombre(archivo)  // fallback: asumir nombre limpio
-        return `${carpeta}/${nombre}`
+        return nombre ? `${carpeta}/${nombre}` : null
       }
 
       if (resumenData?.mensajes?.length) {
@@ -268,7 +267,11 @@ function VistaArchivos({ carpeta, onVolver }) {
                     </div>
                   </td>
                   <td style={{ padding: '7px 10px', textAlign: 'center', verticalAlign: 'top' }}>
-                    {r.path && <BtnVer path={r.path} />}
+                    {r.path
+                      ? <BtnVer path={r.path} />
+                      : r.esArchivo
+                        ? <span style={{ fontSize: 11, color: 'var(--text3)' }}>no está</span>
+                        : null}
                   </td>
                 </tr>
               ))}
