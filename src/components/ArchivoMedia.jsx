@@ -86,6 +86,28 @@ function VistaArchivos({ carpeta, onVolver }) {
       const archivosStorage = (storageData || [])
         .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
 
+      // Bucket privado → signed URLs con token de auth (válidas 24h)
+      const paths = archivosStorage.map(f => `${carpeta}/${f.name}`)
+      const { data: signedData } = paths.length > 0
+        ? await supabase.storage.from(BUCKET).createSignedUrls(paths, 86400)
+        : { data: [] }
+
+      // urlMap indexado por nombre limpio (minúsculas) para tolerar variantes
+      const urlMap = {}
+      for (const s of (signedData || [])) {
+        if (s?.signedUrl) {
+          const nombre = s.path.split('/').pop()
+          urlMap[nombre.toLowerCase()] = s.signedUrl
+          urlMap[limpiarNombre(nombre).toLowerCase()] = s.signedUrl
+        }
+      }
+
+      function urlArchivo(archivo) {
+        return urlMap[archivo.toLowerCase()]
+          || urlMap[limpiarNombre(archivo).toLowerCase()]
+          || null
+      }
+
       if (resumenData?.mensajes?.length) {
         const nombresResumen = new Set(
           resumenData.mensajes.filter(m => m.archivo).map(m => limpiarNombre(m.archivo).toLowerCase())
@@ -99,8 +121,7 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: m.autor || null,
               contenido: m.archivo || m.texto?.trim() || '',
               esArchivo: !!m.archivo,
-              // m.url viene del import (publicUrl guardado), fallback a computarUrl
-              url: m.archivo ? (m.url || computarUrl(carpeta, m.archivo)) : null,
+              url: m.archivo ? urlArchivo(m.archivo) : null,
               ts: parseFechaChat(m.fecha_str),
             })),
           ...archivosStorage
@@ -111,7 +132,7 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: null,
               contenido: f.name,
               esArchivo: true,
-              url: computarUrl(carpeta, f.name),
+              url: urlArchivo(f.name),
               ts: f.created_at ? new Date(f.created_at).getTime() : 0,
             })),
         ].sort((a, b) => a.ts - b.ts)
@@ -123,7 +144,7 @@ function VistaArchivos({ carpeta, onVolver }) {
           autor: null,
           contenido: f.name,
           esArchivo: true,
-          url: computarUrl(carpeta, f.name),
+          url: urlArchivo(f.name),
           ts: f.created_at ? new Date(f.created_at).getTime() : 0,
         })).sort((a, b) => a.ts - b.ts)
         setRegistros(lista)
