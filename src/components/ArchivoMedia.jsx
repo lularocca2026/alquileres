@@ -63,6 +63,34 @@ const TIPO_BADGE = { foto: 'FOTO', audio: 'AUDIO', video: 'VIDEO', pdf: 'PDF', e
 const BADGE_COLOR = { foto: '#dbeafe', audio: '#fef9c3', video: '#f3e8ff', pdf: '#fee2e2', excel: '#dcfce7', otro: 'var(--bg)' }
 const BADGE_TEXT  = { foto: '#1d4ed8', audio: '#92400e', video: '#7e22ce', pdf: '#b91c1c', excel: '#166534', otro: 'var(--text3)' }
 
+// Botón que genera signed URL al hacer click (evita pre-generación que puede fallar)
+function BtnVer({ path }) {
+  const [estado, setEstado] = useState('idle') // idle | loading | error
+  async function abrir() {
+    setEstado('loading')
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 300)
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, '_blank')
+      setEstado('idle')
+    } else {
+      console.error('signed url error', error)
+      setEstado('error')
+      setTimeout(() => setEstado('idle'), 2000)
+    }
+  }
+  return (
+    <button onClick={abrir} disabled={estado === 'loading'}
+      style={{
+        fontWeight: 700, fontSize: 12, border: 'none', cursor: 'pointer',
+        color: estado === 'error' ? 'var(--red)' : 'var(--accent)',
+        background: 'none', padding: 0,
+        opacity: estado === 'loading' ? 0.5 : 1,
+      }}>
+      {estado === 'loading' ? '...' : estado === 'error' ? 'Error' : 'Ver'}
+    </button>
+  )
+}
+
 // ─── Vista de archivos de una carpeta ─────────────────────────────────────────
 function VistaArchivos({ carpeta, onVolver }) {
   const [registros, setRegistros] = useState([])
@@ -86,26 +114,20 @@ function VistaArchivos({ carpeta, onVolver }) {
       const archivosStorage = (storageData || [])
         .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
 
-      // Bucket privado → signed URLs con token de auth (válidas 24h)
-      const paths = archivosStorage.map(f => `${carpeta}/${f.name}`)
-      const { data: signedData } = paths.length > 0
-        ? await supabase.storage.from(BUCKET).createSignedUrls(paths, 86400)
-        : { data: [] }
-
-      // urlMap indexado por nombre limpio (minúsculas) para tolerar variantes
-      const urlMap = {}
-      for (const s of (signedData || [])) {
-        if (s?.signedUrl) {
-          const nombre = s.path.split('/').pop()
-          urlMap[nombre.toLowerCase()] = s.signedUrl
-          urlMap[limpiarNombre(nombre).toLowerCase()] = s.signedUrl
-        }
+      // Mapear nombre de chat → nombre en storage (limpiarNombre) para BtnVer
+      // No pre-generamos URLs; cada BtnVer las genera al hacer click
+      const nombreStorageMap = {}
+      for (const f of archivosStorage) {
+        nombreStorageMap[f.name.toLowerCase()] = f.name
+        nombreStorageMap[limpiarNombre(f.name).toLowerCase()] = f.name
       }
 
-      function urlArchivo(archivo) {
-        return urlMap[archivo.toLowerCase()]
-          || urlMap[limpiarNombre(archivo).toLowerCase()]
-          || null
+      function storagePath(archivo) {
+        // Devuelve el path completo en storage para el archivo del chat
+        const nombre = nombreStorageMap[archivo.toLowerCase()]
+          || nombreStorageMap[limpiarNombre(archivo).toLowerCase()]
+          || limpiarNombre(archivo)  // fallback: asumir nombre limpio
+        return `${carpeta}/${nombre}`
       }
 
       if (resumenData?.mensajes?.length) {
@@ -121,7 +143,7 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: m.autor || null,
               contenido: m.archivo || m.texto?.trim() || '',
               esArchivo: !!m.archivo,
-              url: m.archivo ? urlArchivo(m.archivo) : null,
+              path: m.archivo ? storagePath(m.archivo) : null,
               ts: parseFechaChat(m.fecha_str),
             })),
           ...archivosStorage
@@ -132,7 +154,7 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: null,
               contenido: f.name,
               esArchivo: true,
-              url: urlArchivo(f.name),
+              path: `${carpeta}/${f.name}`,
               ts: f.created_at ? new Date(f.created_at).getTime() : 0,
             })),
         ].sort((a, b) => a.ts - b.ts)
@@ -144,7 +166,7 @@ function VistaArchivos({ carpeta, onVolver }) {
           autor: null,
           contenido: f.name,
           esArchivo: true,
-          url: urlArchivo(f.name),
+          path: `${carpeta}/${f.name}`,
           ts: f.created_at ? new Date(f.created_at).getTime() : 0,
         })).sort((a, b) => a.ts - b.ts)
         setRegistros(lista)
@@ -223,14 +245,8 @@ function VistaArchivos({ carpeta, onVolver }) {
                       {r.contenido}
                     </div>
                   </td>
-                  <td style={{ padding: '7px 10px', textAlign: 'center', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
-                    {r.url
-                      ? <a href={r.url} target="_blank" rel="noopener noreferrer"
-                          style={{ fontWeight: 700, color: 'var(--accent)', textDecoration: 'none' }}>
-                          Ver
-                        </a>
-                      : null
-                    }
+                  <td style={{ padding: '7px 10px', textAlign: 'center', verticalAlign: 'top' }}>
+                    {r.path && <BtnVer path={r.path} />}
                   </td>
                 </tr>
               ))}
