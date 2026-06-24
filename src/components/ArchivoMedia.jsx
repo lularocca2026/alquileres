@@ -33,21 +33,14 @@ function tipoArchivo(nombre) {
 
 const ICONOS = { foto: '📷', audio: '🎙', video: '🎬', pdf: '📄', excel: '📊', otro: '📎' }
 
-function publicUrl(carpeta, archivo) {
-  // Construir URL con encoding correcto para espacios y caracteres especiales
-  const base = import.meta.env.VITE_SUPABASE_URL
-  const path = carpeta.split('/').map(encodeURIComponent).join('/') +
-    '/' + archivo.split('/').map(encodeURIComponent).join('/')
-  return `${base}/storage/v1/object/public/${BUCKET}/${path}`
-}
-
-function limpiarNombre(s) {
-  return s.replace(/[°º]/g, '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
-}
-
-function computarUrl(carpeta, archivo) {
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${carpeta}/${limpiarNombre(archivo)}`)
-  return data?.publicUrl || null
+// Clave muy tolerante para emparejar nombre del chat con nombre real en storage:
+// ignora mayúsculas, acentos, espacios, guiones y cualquier caracter no alfanumérico.
+function matchKey(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9.]/g, '')
 }
 
 function parseFechaChat(s) {
@@ -123,75 +116,71 @@ function VistaArchivos({ carpeta, onVolver }) {
     async function cargar() {
       const EXCLUIR = ['_resumen.json', '_chat.txt']
 
-      const [{ data: storageData }, { data: resumenBlob }] = await Promise.all([
-        supabase.storage.from(BUCKET).list(carpeta, { limit: 500 }),
-        supabase.storage.from(BUCKET).download(`${carpeta}/_resumen.json`),
-      ])
+      // Listar TODOS los archivos del storage (paginado por si hay > 1000)
+      let archivosStorage = []
+      let offset = 0
+      while (true) {
+        const { data } = await supabase.storage.from(BUCKET).list(carpeta, {
+          limit: 1000, offset, sortBy: { column: 'name', order: 'asc' },
+        })
+        if (!data || data.length === 0) break
+        archivosStorage.push(...data)
+        if (data.length < 1000) break
+        offset += 1000
+      }
+      archivosStorage = archivosStorage
+        .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
 
+      // Resumen del chat (metadata: fecha, autor, texto)
+      const { data: resumenBlob } = await supabase.storage.from(BUCKET).download(`${carpeta}/_resumen.json`)
       let resumenData = null
       if (resumenBlob) {
         try { resumenData = JSON.parse(await resumenBlob.text()) } catch {}
       }
 
-      const archivosStorage = (storageData || [])
-        .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
+      const mensajes = resumenData?.mensajes || []
 
-      // Mapear nombre de chat → nombre real en storage.
-      // Solo los archivos que existen en storage tendrán botón "Ver".
-      const nombreStorageMap = {}
-      for (const f of archivosStorage) {
-        nombreStorageMap[f.name.toLowerCase()] = f.name
-        nombreStorageMap[limpiarNombre(f.name).toLowerCase()] = f.name
+      // Index del resumen por matchKey del nombre de archivo → metadata del mensaje
+      const metaPorArchivo = {}
+      for (const m of mensajes) {
+        if (m.archivo) metaPorArchivo[matchKey(m.archivo)] = m
       }
+      const clavesUsadas = new Set()
 
-      function storagePath(archivo) {
-        // Devuelve el path solo si el archivo existe realmente en storage; si no, null
-        const nombre = nombreStorageMap[archivo.toLowerCase()]
-          || nombreStorageMap[limpiarNombre(archivo).toLowerCase()]
-        return nombre ? `${carpeta}/${nombre}` : null
-      }
-
-      if (resumenData?.mensajes?.length) {
-        const nombresResumen = new Set(
-          resumenData.mensajes.filter(m => m.archivo).map(m => limpiarNombre(m.archivo).toLowerCase())
-        )
-        const lista = [
-          ...resumenData.mensajes
-            .filter(m => m.archivo || (m.texto && m.texto.trim().length > 3))
-            .map(m => ({
-              tipo: m.archivo ? tipoArchivo(m.archivo) : 'texto',
-              fecha: m.fecha_str || null,
-              autor: m.autor || null,
-              contenido: m.archivo || m.texto?.trim() || '',
-              esArchivo: !!m.archivo,
-              path: m.archivo ? storagePath(m.archivo) : null,
-              ts: parseFechaChat(m.fecha_str),
-            })),
-          ...archivosStorage
-            .filter(f => !nombresResumen.has(f.name.toLowerCase()))
-            .map(f => ({
-              tipo: tipoArchivo(f.name),
-              fecha: f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : null,
-              autor: null,
-              contenido: f.name,
-              esArchivo: true,
-              path: `${carpeta}/${f.name}`,
-              ts: f.created_at ? new Date(f.created_at).getTime() : 0,
-            })),
-        ].sort((a, b) => a.ts - b.ts)
-        setRegistros(lista)
-      } else {
-        const lista = archivosStorage.map(f => ({
+      // 1) FUENTE DE VERDAD: cada archivo en storage SIEMPRE se puede abrir
+      const filasArchivos = archivosStorage.map(f => {
+        const key = matchKey(f.name)
+        const meta = metaPorArchivo[key]
+        if (meta) clavesUsadas.add(key)
+        return {
           tipo: tipoArchivo(f.name),
-          fecha: f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : null,
-          autor: null,
-          contenido: f.name,
+          fecha: meta?.fecha_str || (f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : null),
+          autor: meta?.autor || null,
+          contenido: meta?.archivo || f.name,
           esArchivo: true,
           path: `${carpeta}/${f.name}`,
-          ts: f.created_at ? new Date(f.created_at).getTime() : 0,
-        })).sort((a, b) => a.ts - b.ts)
-        setRegistros(lista)
-      }
+          ts: parseFechaChat(meta?.fecha_str) || (f.created_at ? new Date(f.created_at).getTime() : 0),
+        }
+      })
+
+      // 2) Mensajes de TEXTO (sin archivo) + referencias a archivos que NO están en storage
+      const filasTexto = mensajes
+        .filter(m => {
+          if (m.archivo) return !clavesUsadas.has(matchKey(m.archivo)) // archivo faltante
+          return m.texto && m.texto.trim().length > 3                   // texto real
+        })
+        .map(m => ({
+          tipo: m.archivo ? tipoArchivo(m.archivo) : 'texto',
+          fecha: m.fecha_str || null,
+          autor: m.autor || null,
+          contenido: m.archivo || m.texto.trim(),
+          esArchivo: !!m.archivo,
+          path: null, // no está en storage
+          ts: parseFechaChat(m.fecha_str),
+        }))
+
+      const lista = [...filasArchivos, ...filasTexto].sort((a, b) => a.ts - b.ts)
+      setRegistros(lista)
       setCargando(false)
     }
     cargar()
