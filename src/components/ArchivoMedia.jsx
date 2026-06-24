@@ -77,18 +77,11 @@ function VistaArchivos({ carpeta, onVolver }) {
       const archivosStorage = (storageData || [])
         .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
 
-      // Generar URLs firmadas para todos los archivos del storage en una sola llamada
-      const paths = archivosStorage.map(f => `${carpeta}/${f.name}`)
-      const { data: signedData } = paths.length > 0
-        ? await supabase.storage.from(BUCKET).createSignedUrls(paths, 86400)
-        : { data: [] }
-
+      // Mismo método que ImportarZip: getPublicUrl (sincrónico, mismo bucket público)
       const urlMap = {}
-      for (const s of (signedData || [])) {
-        if (s.signedUrl) {
-          const filename = s.path.split('/').pop()
-          urlMap[filename.toLowerCase()] = s.signedUrl
-        }
+      for (const f of archivosStorage) {
+        const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${carpeta}/${f.name}`)
+        if (data?.publicUrl) urlMap[f.name.toLowerCase()] = data.publicUrl
       }
 
       if (resumenData?.mensajes?.length) {
@@ -102,7 +95,8 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: m.autor || null,
               contenido: m.archivo || m.texto?.trim() || '',
               esArchivo: !!m.archivo,
-              url: m.archivo ? (urlMap[m.archivo.toLowerCase()] || null) : null,
+              // m.url viene del import (ya es publicUrl), fallback a urlMap
+              url: m.archivo ? (m.url || urlMap[m.archivo.toLowerCase()] || null) : null,
               ts: parseFechaChat(m.fecha_str),
             })),
           ...archivosStorage
@@ -162,61 +156,62 @@ function VistaArchivos({ carpeta, onVolver }) {
         </div>
       )}
 
-      <div className="content" style={{ padding: 0 }}>
+      <div style={{ overflowX: 'auto', flex: 1 }}>
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
         {!cargando && lista.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin mensajes</div>
         )}
 
-        {lista.map((r, i) => (
-          <div key={i} style={{
-            display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px',
-            borderBottom: '1px solid var(--border)',
-          }}>
-            {/* Icono */}
-            <span style={{ fontSize: 16, flexShrink: 0, paddingTop: 2 }}>
-              {r.tipo === 'texto' ? '💬' : ICONOS[r.tipo]}
-            </span>
-
-            {/* Contenido */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              {/* Cabecera: fecha · badge · autor */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3, flexWrap: 'wrap' }}>
-                {r.fecha && <span style={{ fontSize: 11, color: 'var(--text3)' }}>{r.fecha}</span>}
-                <span style={{
-                  fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
-                  background: r.tipo === 'texto' ? '#f3f4f6' : BADGE_COLOR[r.tipo],
-                  color: r.tipo === 'texto' ? 'var(--text3)' : BADGE_TEXT[r.tipo],
-                }}>
-                  {r.tipo === 'texto' ? 'TEXTO' : TIPO_BADGE[r.tipo]}
-                </span>
-                {r.autor && (
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
-                    {r.autor.replace(/^Inq\s+/i, '')}
-                  </span>
-                )}
-              </div>
-              {/* Texto o nombre de archivo */}
-              <div style={{
-                fontSize: 13,
-                color: r.esArchivo ? 'var(--text)' : 'var(--text2)',
-                overflow: 'hidden', textOverflow: 'ellipsis',
-                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-              }}>
-                {r.contenido}
-              </div>
-            </div>
-
-            {/* Link Ver */}
-            {r.url
-              ? <a href={r.url} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', flexShrink: 0, textDecoration: 'none', paddingLeft: 6, paddingTop: 2 }}>
-                  Ver
-                </a>
-              : <span style={{ width: 26 }} />
-            }
-          </div>
-        ))}
+        {!cargando && lista.length > 0 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 1 }}>
+                {['Fecha','Tipo','Autor','Mensaje / Archivo','Ver'].map((h, i) => (
+                  <th key={h} style={{
+                    padding: '8px 10px', textAlign: i === 4 ? 'center' : 'left',
+                    fontWeight: 700, fontSize: 11, color: 'var(--text2)',
+                    borderBottom: '2px solid var(--border)', whiteSpace: 'nowrap',
+                  }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {lista.map((r, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface)' }}>
+                  <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--text3)', verticalAlign: 'top' }}>
+                    {r.fecha || '—'}
+                  </td>
+                  <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                      background: r.tipo === 'texto' ? '#f3f4f6' : BADGE_COLOR[r.tipo],
+                      color: r.tipo === 'texto' ? 'var(--text3)' : BADGE_TEXT[r.tipo],
+                    }}>
+                      {r.tipo === 'texto' ? 'TEXTO' : TIPO_BADGE[r.tipo]}
+                    </span>
+                  </td>
+                  <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text2)', verticalAlign: 'top' }}>
+                    {r.autor ? r.autor.replace(/^Inq\s+/i, '') : '—'}
+                  </td>
+                  <td style={{ padding: '7px 10px', maxWidth: 220, verticalAlign: 'top' }}>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', color: r.esArchivo ? 'var(--text)' : 'var(--text2)' }}>
+                      {r.contenido}
+                    </div>
+                  </td>
+                  <td style={{ padding: '7px 10px', textAlign: 'center', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                    {r.url
+                      ? <a href={r.url} target="_blank" rel="noopener noreferrer"
+                          style={{ fontWeight: 700, color: 'var(--accent)', textDecoration: 'none' }}>
+                          Ver
+                        </a>
+                      : null
+                    }
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   )
