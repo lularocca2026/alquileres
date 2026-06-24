@@ -166,7 +166,7 @@ function AlbumFotos({ fotos }) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function ImportarZip({ onVolver }) {
+export default function ImportarZip({ onVolver, onArchivos }) {
   const { agregarPago, agregarMantenimiento, editarContrato, contratos } = useData()
   const [fase, setFase] = useState('instrucciones')
   const [resultado, setResultado] = useState(null)
@@ -174,6 +174,7 @@ export default function ImportarZip({ onVolver }) {
   const [progreso, setProgreso] = useState('')
   const [seleccionados, setSeleccionados] = useState({})
   const [confirmados, setConfirmados] = useState(false)
+  const [carpetaImportada, setCarpetaImportada] = useState(null)
   const inputRef = useRef(null)
 
   function toggleItem(tipo, idx) {
@@ -303,6 +304,7 @@ export default function ImportarZip({ onVolver }) {
         .filter(m => m.url && m.archivo?.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i))
         .map(m => ({ nombre: m.archivo, url: m.url }))
 
+      setCarpetaImportada(carpeta)
       setResultado({ total_mensajes: mensajes.length, archivos_subidos: subidos, analisis, fotos })
 
       const sel = {}
@@ -541,13 +543,28 @@ export default function ImportarZip({ onVolver }) {
         {confirmados && (
           <div style={{ textAlign: 'center', padding: '60px 16px' }}>
             <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
-            <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>¡Datos importados!</div>
-            <div style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 32 }}>
-              Los pagos y observaciones ya están en la app. Los archivos están disponibles en la sección Archivos.
+            <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>¡ZIP importado!</div>
+            {resultado?.archivos_subidos > 0 && (
+              <div style={{ fontSize: 14, color: 'var(--green)', fontWeight: 600, marginBottom: 8 }}>
+                {resultado.archivos_subidos} archivo{resultado.archivos_subidos > 1 ? 's' : ''} subido{resultado.archivos_subidos > 1 ? 's' : ''} a la nube
+              </div>
+            )}
+            {resultado?.archivos_subidos === 0 && (
+              <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 8 }}>
+                Solo se importó el texto del chat (sin archivos adjuntos)
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 24, width: '100%' }}>
+              {carpetaImportada && onArchivos && (
+                <button className="btn btn-primary btn-full" style={{ padding: '12px' }}
+                  onClick={() => onArchivos(carpetaImportada)}>
+                  📁 Ver archivos importados
+                </button>
+              )}
+              <button className="btn btn-secondary btn-full" style={{ padding: '12px' }} onClick={onVolver}>
+                Volver al inicio
+              </button>
             </div>
-            <button className="btn btn-primary" style={{ padding: '12px 32px' }} onClick={onVolver}>
-              Volver al inicio
-            </button>
           </div>
         )}
 

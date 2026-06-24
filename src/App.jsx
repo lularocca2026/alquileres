@@ -43,7 +43,10 @@ function AppInterna() {
         />
       )}
       {vista === 'importar' && (
-        <ImportarZip onVolver={volver} />
+        <ImportarZip
+          onVolver={volver}
+          onArchivos={nombre => { setChatSeleccionado(nombre || null); setVista('archivos') }}
+        />
       )}
       {vista === 'archivos' && (
         <ArchivoMedia
