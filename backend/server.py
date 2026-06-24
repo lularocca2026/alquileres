@@ -258,6 +258,51 @@ def organizar_media(media_dir: Path, nombre_zip: str) -> dict:
     return {"fotos": fotos, "audios": audios}
 
 
+# ── Subir archivos a Supabase Storage ─────────────────────────────────────────
+
+import unicodedata, mimetypes
+import requests as _requests
+
+def limpiar_clave(s: str) -> str:
+    s = s.replace('°', '').replace('º', '')
+    s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
+    s = re.sub(r'\s+', ' ', s).strip()
+    return s
+
+def subir_a_supabase(directorio: Path, nombre_chat: str) -> dict:
+    """Sube todos los archivos del directorio a Supabase Storage. Retorna {nombre: url_publica}"""
+    supabase_url = os.environ.get('SUPABASE_URL', '').rstrip('/')
+    service_key = os.environ.get('SUPABASE_SERVICE_KEY', '')
+    if not supabase_url or not service_key:
+        print("[Supabase] Sin credenciales, no se suben archivos")
+        return {}
+
+    headers = {
+        'apikey': service_key,
+        'Authorization': f'Bearer {service_key}',
+    }
+    carpeta = limpiar_clave(nombre_chat)
+    url_map = {}
+
+    for f in sorted(directorio.iterdir()):
+        if not f.is_file() or f.suffix.lower() == '.zip':
+            continue
+        dest = f"{carpeta}/{limpiar_clave(f.name)}"
+        mime = mimetypes.guess_type(f.name)[0] or 'application/octet-stream'
+        r = _requests.post(
+            f"{supabase_url}/storage/v1/object/archivos/{dest}",
+            headers={**headers, 'Content-Type': mime, 'x-upsert': 'true'},
+            data=f.read_bytes(),
+        )
+        if r.status_code in (200, 201):
+            url_map[f.name] = f"{supabase_url}/storage/v1/object/public/archivos/{dest}"
+        else:
+            print(f"[Supabase] Error subiendo {f.name}: {r.status_code}")
+
+    print(f"[Supabase] Subidos {len(url_map)} archivos de {nombre_chat}")
+    return url_map
+
+
 # ── Endpoint principal ─────────────────────────────────────────────────────────
 
 @app.post("/api/procesar-zip")
@@ -287,10 +332,9 @@ async def procesar_zip(archivo: UploadFile = File(...)):
             nombre_destino = "_chat.txt" if f.suffix.lower() == ".txt" else f.name
             shutil.copy2(f, destino / nombre_destino)
 
-    # Usar destino_tmp para leer el chat
     destino_lectura = destino_tmp
 
-    # 2. Buscar _chat.txt en carpeta temporal
+    # 2. Buscar _chat.txt
     chat_txt = None
     for f in destino_lectura.rglob("*.txt"):
         if "chat" in f.name.lower() or f.name.startswith("_"):
@@ -308,7 +352,7 @@ async def procesar_zip(archivo: UploadFile = File(...)):
             texto = chat_txt.read_text(encoding="latin-1", errors="replace")
         mensajes = parsear_chat(texto)
 
-    # 3. Organizar media (desde carpeta temporal)
+    # 3. Organizar media
     media = organizar_media(destino_lectura, nombre_zip)
 
     # 4. Transcribir audios
@@ -317,34 +361,61 @@ async def procesar_zip(archivo: UploadFile = File(...)):
         ruta = Path(audio_info["ruta"])
         transcripcion = transcribir_audio(ruta)
         if transcripcion:
-            transcripciones.append({
-                "nombre": audio_info["nombre"],
-                "texto": transcripcion,
-            })
-            # Agregar como mensaje al análisis
+            transcripciones.append({"nombre": audio_info["nombre"], "texto": transcripcion})
             mensajes.append({
-                "fecha": None,
-                "fecha_str": "audio",
-                "autor": "audio",
+                "fecha": None, "fecha_str": "audio", "autor": "audio",
                 "texto": f"[Audio transcripto]: {transcripcion}",
                 "archivo": audio_info["nombre"],
             })
 
-    # 5. Cargar datos existentes
+    # 5. Subir archivos a Supabase Storage y obtener URLs
+    url_map = subir_a_supabase(destino_lectura, nombre_zip)
+
+    # 6. Guardar resumen del chat en Supabase Storage como JSON
+    if url_map:
+        # Reemplazar referencias de archivos en mensajes con URLs de Supabase
+        mensajes_con_urls = []
+        for m in mensajes:
+            msg = dict(m)
+            if msg.get("archivo") and msg["archivo"] in url_map:
+                msg["url"] = url_map[msg["archivo"]]
+            mensajes_con_urls.append(msg)
+
+        resumen = {
+            "nombre_chat": nombre_zip,
+            "total_mensajes": len(mensajes),
+            "url_map": url_map,
+            "mensajes": mensajes_con_urls,
+        }
+        resumen_bytes = json.dumps(resumen, ensure_ascii=False, indent=2).encode("utf-8")
+        supabase_url = os.environ.get('SUPABASE_URL', '').rstrip('/')
+        service_key = os.environ.get('SUPABASE_SERVICE_KEY', '')
+        carpeta_clean = limpiar_clave(nombre_zip)
+        dest_resumen = f"{carpeta_clean}/_resumen.json"
+        _requests.post(
+            f"{supabase_url}/storage/v1/object/archivos/{dest_resumen}",
+            headers={
+                'apikey': service_key,
+                'Authorization': f'Bearer {service_key}',
+                'Content-Type': 'application/json',
+                'x-upsert': 'true',
+            },
+            data=resumen_bytes,
+        )
+        print(f"[Supabase] Resumen guardado: {dest_resumen}")
+
+    # 7. Cargar datos existentes y analizar con Claude
     datos_existentes = {}
     if JSON_PATH.exists():
         datos_existentes = json.loads(JSON_PATH.read_text(encoding="utf-8"))
 
-    # 6. Analizar con Claude
     analisis = {"pagos": [], "mantenimiento": [], "observaciones": [], "inconsistencias": []}
     if mensajes:
         analisis = analizar_con_claude(mensajes, datos_existentes)
-        print(f"[Claude] Detectó: {len(analisis.get('pagos',[]))} pagos, "
-              f"{len(analisis.get('mantenimiento',[]))} mantenimiento, "
-              f"{len(analisis.get('observaciones',[]))} observaciones, "
-              f"{len(analisis.get('inconsistencias',[]))} inconsistencias")
+        print(f"[Claude] {len(analisis.get('pagos',[]))} pagos, "
+              f"{len(analisis.get('mantenimiento',[]))} mant, "
+              f"{len(analisis.get('observaciones',[]))} obs")
 
-    # 7. Respuesta
     return {
         "ok": True,
         "nombre_zip": nombre_zip,
@@ -354,6 +425,7 @@ async def procesar_zip(archivo: UploadFile = File(...)):
         "transcripciones": transcripciones,
         "tiene_audios": len(media["audios"]) > 0,
         "tiene_fotos": len(media["fotos"]) > 0,
+        "archivos_subidos": len(url_map),
     }
 
 
