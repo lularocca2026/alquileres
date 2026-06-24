@@ -62,6 +62,7 @@ function VistaArchivos({ carpeta, onVolver }) {
 
       const lista = [
         ...mensajesConArchivo.map(m => ({
+          nombre: m.archivo || '',
           tipo: tipoArchivo(m.archivo || ''),
           fecha: m.fecha_str || null,
           url: m.url,
@@ -69,6 +70,7 @@ function VistaArchivos({ carpeta, onVolver }) {
         ...archivosStorage
           .filter(f => !nombresConFecha.has(f.name.toLowerCase()))
           .map(f => ({
+            nombre: f.name,
             tipo: tipoArchivo(f.name),
             fecha: null,
             url: publicUrl(carpeta, f.name),
@@ -100,21 +102,21 @@ function VistaArchivos({ carpeta, onVolver }) {
 
         {registros.map((r, i) => (
           <div key={i} style={{
-            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+            display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
             borderBottom: '1px solid var(--border)',
           }}>
-            <span style={{ fontSize: 22, flexShrink: 0 }}>{ICONOS[r.tipo]}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 500, textTransform: 'capitalize' }}>{r.tipo}</div>
-              {r.fecha && <div style={{ fontSize: 12, color: 'var(--text3)' }}>{r.fecha}</div>}
+            <span style={{ fontSize: 20, flexShrink: 0 }}>{ICONOS[r.tipo]}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 2 }}>
+                {r.fecha || '—'} · <span style={{ fontWeight: 600, textTransform: 'uppercase' }}>{r.tipo}</span>
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {r.nombre}
+              </div>
             </div>
             <a href={r.url} target="_blank" rel="noopener noreferrer"
-              style={{
-                width: 34, height: 34, borderRadius: 8, flexShrink: 0, textDecoration: 'none',
-                background: 'var(--accent)', color: 'white',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
-              }}>
-              ↗
+              style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', flexShrink: 0, textDecoration: 'none', padding: '6px 10px' }}>
+              Ver
             </a>
           </div>
         ))}
