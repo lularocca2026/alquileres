@@ -334,7 +334,7 @@ function HistorialICL({ historial }) {
 }
 
 function TabContrato({ contrato, propiedad, onNuevoContrato }) {
-  const { editarContrato, inquilinos } = useData()
+  const { editarContrato, inquilinos, agregarInquilino } = useData()
   const [editando, setEditando] = useState(false)
   const [nuevoContrato, setNuevoContrato] = useState(false)
   const [confirmArchivar, setConfirmArchivar] = useState(false)
@@ -504,6 +504,7 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
           inquilinos={inquilinos}
           onCerrar={() => setNuevoContrato(false)}
           onGuardar={datos => { onNuevoContrato(datos); setNuevoContrato(false) }}
+          onAgregarInquilino={agregarInquilino}
         />
       )}
     </div>
@@ -594,7 +595,7 @@ function EditarInquilinoModal({ inquilino, onGuardar, onCerrar }) {
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) {
-  const { getPropiedad, getContratoActivo, getContratosPropiedad, getInquilino, editarInquilino, editarContrato, agregarContrato, inquilinos } = useData()
+  const { getPropiedad, getContratoActivo, getContratosPropiedad, getInquilino, editarInquilino, editarContrato, agregarContrato, agregarInquilino, inquilinos } = useData()
   const [tab, setTab] = useState('pagos')
   const [editandoInq, setEditandoInq] = useState(false)
   const [nuevoContrato, setNuevoContrato] = useState(false)
@@ -748,6 +749,7 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
           inquilinos={inquilinos}
           onCerrar={() => setNuevoContrato(false)}
           onGuardar={datos => { agregarContrato(datos); setNuevoContrato(false) }}
+          onAgregarInquilino={agregarInquilino}
         />
       )}
     </div>
