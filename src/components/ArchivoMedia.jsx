@@ -50,9 +50,14 @@ function parseFechaChat(s) {
   return new Date(year, parseInt(mo) - 1, parseInt(d), parseInt(h), parseInt(mi)).getTime()
 }
 
+const TIPO_BADGE = { foto: 'FOTO', audio: 'AUDIO', video: 'VIDEO', pdf: 'PDF', excel: 'EXCEL', otro: 'OTRO' }
+const BADGE_COLOR = { foto: '#dbeafe', audio: '#fef9c3', video: '#f3e8ff', pdf: '#fee2e2', excel: '#dcfce7', otro: 'var(--bg)' }
+const BADGE_TEXT  = { foto: '#1d4ed8', audio: '#92400e', video: '#7e22ce', pdf: '#b91c1c', excel: '#166534', otro: 'var(--text3)' }
+
 // ─── Vista de archivos de una carpeta ─────────────────────────────────────────
 function VistaArchivos({ carpeta, onVolver }) {
   const [registros, setRegistros] = useState([])
+  const [soloArchivos, setSoloArchivos] = useState(false)
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -66,80 +71,133 @@ function VistaArchivos({ carpeta, onVolver }) {
       const archivosStorage = (storageData || [])
         .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
 
-      const mensajesConArchivo = resumenData?.mensajes?.filter(m => m.url) || []
-      const nombresConFecha = new Set(mensajesConArchivo.map(m => m.archivo?.toLowerCase()))
-
-      const lista = [
-        ...mensajesConArchivo.map(m => ({
-          nombre: m.archivo || '',
-          tipo: tipoArchivo(m.archivo || ''),
-          fecha: m.fecha_str || null,
-          autor: m.autor || null,
-          texto: m.texto?.trim() || null,
-          url: m.url,
-          ts: parseFechaChat(m.fecha_str),
-        })),
-        ...archivosStorage
-          .filter(f => !nombresConFecha.has(f.name.toLowerCase()))
-          .map(f => ({
-            nombre: f.name,
-            tipo: tipoArchivo(f.name),
-            fecha: f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : null,
-            autor: null,
-            texto: null,
-            url: publicUrl(carpeta, f.name),
-            ts: f.created_at ? new Date(f.created_at).getTime() : 0,
-          })),
-      ].sort((a, b) => a.ts - b.ts)
-
-      setRegistros(lista)
+      if (resumenData?.mensajes?.length) {
+        // Con resumen: mostrar todos los mensajes con contenido
+        const nombresResumen = new Set(resumenData.mensajes.map(m => m.archivo?.toLowerCase()).filter(Boolean))
+        const lista = [
+          ...resumenData.mensajes
+            .filter(m => m.archivo || (m.texto && m.texto.trim().length > 3))
+            .map(m => ({
+              tipo: m.archivo ? tipoArchivo(m.archivo) : 'texto',
+              fecha: m.fecha_str || null,
+              autor: m.autor || null,
+              contenido: m.archivo || m.texto?.trim() || '',
+              esArchivo: !!m.archivo,
+              url: m.url || null,
+              ts: parseFechaChat(m.fecha_str),
+            })),
+          // archivos en storage sin entrada en resumen
+          ...archivosStorage
+            .filter(f => !nombresResumen.has(f.name.toLowerCase()))
+            .map(f => ({
+              tipo: tipoArchivo(f.name),
+              fecha: f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : null,
+              autor: null,
+              contenido: f.name,
+              esArchivo: true,
+              url: publicUrl(carpeta, f.name),
+              ts: f.created_at ? new Date(f.created_at).getTime() : 0,
+            })),
+        ].sort((a, b) => a.ts - b.ts)
+        setRegistros(lista)
+      } else {
+        // Sin resumen: solo archivos del storage
+        const lista = archivosStorage.map(f => ({
+          tipo: tipoArchivo(f.name),
+          fecha: f.created_at ? new Date(f.created_at).toLocaleDateString('es-AR') : null,
+          autor: null,
+          contenido: f.name,
+          esArchivo: true,
+          url: publicUrl(carpeta, f.name),
+          ts: f.created_at ? new Date(f.created_at).getTime() : 0,
+        })).sort((a, b) => a.ts - b.ts)
+        setRegistros(lista)
+      }
       setCargando(false)
     }
     cargar()
   }, [carpeta])
 
   const titulo = carpeta.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
+  const lista = soloArchivos ? registros.filter(r => r.esArchivo) : registros
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="header">
         <button className="back-btn" onClick={onVolver}>←</button>
-        <h1 style={{ fontSize: 16 }}>{titulo}</h1>
-        {!cargando && <span style={{ fontSize: 13, color: 'var(--text3)' }}>{registros.length}</span>}
+        <h1 style={{ fontSize: 15 }}>{titulo}</h1>
+        {!cargando && <span style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }}>{lista.length}</span>}
       </div>
+
+      {/* Filtro */}
+      {!cargando && registros.some(r => !r.esArchivo) && (
+        <div style={{ display: 'flex', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+          {[false, true].map(v => (
+            <button key={String(v)} onClick={() => setSoloArchivos(v)}
+              style={{
+                padding: '5px 14px', borderRadius: 20, fontSize: 13, border: '1px solid var(--border)',
+                background: soloArchivos === v ? 'var(--accent)' : 'transparent',
+                color: soloArchivos === v ? 'white' : 'var(--text2)', cursor: 'pointer',
+              }}>
+              {v ? 'Solo archivos' : 'Todo'}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="content" style={{ padding: 0 }}>
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
-
-        {!cargando && registros.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin archivos</div>
+        {!cargando && lista.length === 0 && (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin mensajes</div>
         )}
 
-        {registros.map((r, i) => (
+        {lista.map((r, i) => (
           <div key={i} style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+            display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px',
             borderBottom: '1px solid var(--border)',
           }}>
-            <span style={{ fontSize: 18, flexShrink: 0 }}>{ICONOS[r.tipo]}</span>
+            {/* Icono */}
+            <span style={{ fontSize: 16, flexShrink: 0, paddingTop: 2 }}>
+              {r.tipo === 'texto' ? '💬' : ICONOS[r.tipo]}
+            </span>
+
+            {/* Contenido */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <span>{r.fecha || '—'}</span>
-                <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>{r.tipo}</span>
-                {r.autor && <span style={{ color: 'var(--text2)', fontWeight: 600 }}>{r.autor.split(/[\s,]+/)[0]}</span>}
+              {/* Cabecera: fecha · badge · autor */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3, flexWrap: 'wrap' }}>
+                {r.fecha && <span style={{ fontSize: 11, color: 'var(--text3)' }}>{r.fecha}</span>}
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
+                  background: r.tipo === 'texto' ? '#f3f4f6' : BADGE_COLOR[r.tipo],
+                  color: r.tipo === 'texto' ? 'var(--text3)' : BADGE_TEXT[r.tipo],
+                }}>
+                  {r.tipo === 'texto' ? 'TEXTO' : TIPO_BADGE[r.tipo]}
+                </span>
+                {r.autor && (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
+                    {r.autor.replace(/^Inq\s+/i, '')}
+                  </span>
+                )}
               </div>
-              <div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {r.nombre}
+              {/* Texto o nombre de archivo */}
+              <div style={{
+                fontSize: 13,
+                color: r.esArchivo ? 'var(--text)' : 'var(--text2)',
+                overflow: 'hidden', textOverflow: 'ellipsis',
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+              }}>
+                {r.contenido}
               </div>
-              {r.texto && (
-                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {r.texto}
-                </div>
-              )}
             </div>
-            <a href={r.url} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', flexShrink: 0, textDecoration: 'none', paddingLeft: 10 }}>
-              Ver
-            </a>
+
+            {/* Link Ver */}
+            {r.url
+              ? <a href={r.url} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', flexShrink: 0, textDecoration: 'none', paddingLeft: 6, paddingTop: 2 }}>
+                  Ver
+                </a>
+              : <span style={{ width: 26 }} />
+            }
           </div>
         ))}
       </div>
