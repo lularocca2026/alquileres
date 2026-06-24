@@ -63,17 +63,39 @@ const TIPO_BADGE = { foto: 'FOTO', audio: 'AUDIO', video: 'VIDEO', pdf: 'PDF', e
 const BADGE_COLOR = { foto: '#dbeafe', audio: '#fef9c3', video: '#f3e8ff', pdf: '#fee2e2', excel: '#dcfce7', otro: 'var(--bg)' }
 const BADGE_TEXT  = { foto: '#1d4ed8', audio: '#92400e', video: '#7e22ce', pdf: '#b91c1c', excel: '#166534', otro: 'var(--text3)' }
 
-// Botón que genera signed URL al hacer click (evita pre-generación que puede fallar)
+const MIME_MAP = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
+  webp: 'image/webp', heic: 'image/heic',
+  mp3: 'audio/mpeg', ogg: 'audio/ogg', opus: 'audio/ogg',
+  m4a: 'audio/mp4', wav: 'audio/wav', aac: 'audio/aac',
+  mp4: 'video/mp4', mov: 'video/quicktime', avi: 'video/x-msvideo',
+  pdf: 'application/pdf',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  xls: 'application/vnd.ms-excel', vcf: 'text/vcard',
+}
+
+// download() funciona con bucket privado; genera blob URL para abrir en browser
 function BtnVer({ path }) {
-  const [estado, setEstado] = useState('idle') // idle | loading | error
+  const [estado, setEstado] = useState('idle')
   async function abrir() {
     setEstado('loading')
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 300)
-    if (data?.signedUrl) {
-      window.open(data.signedUrl, '_blank')
+    const { data, error } = await supabase.storage.from(BUCKET).download(path)
+    if (data) {
+      const ext = path.split('.').pop().toLowerCase()
+      const type = MIME_MAP[ext] || 'application/octet-stream'
+      const blob = new Blob([data], { type })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
       setEstado('idle')
     } else {
-      console.error('signed url error', error)
+      console.error('download error', error)
       setEstado('error')
       setTimeout(() => setEstado('idle'), 2000)
     }
