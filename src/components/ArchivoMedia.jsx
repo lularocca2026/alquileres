@@ -196,21 +196,28 @@ function VistaArchivos({ carpeta, onVolver }) {
         {!cargando && <span style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }}>{lista.length}</span>}
       </div>
 
-      <div style={{ overflowX: 'auto', flex: 1 }}>
+      <div style={{ flex: 1 }}>
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
         {!cargando && lista.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin mensajes</div>
         )}
 
         {!cargando && lista.length > 0 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: 12 }}>
+            <colgroup>
+              <col style={{ width: 58 }} />{/* Fecha */}
+              <col style={{ width: 50 }} />{/* Tipo */}
+              <col style={{ width: 56 }} />{/* Autor */}
+              <col />{/* Mensaje / Archivo (resto) */}
+              <col style={{ width: 40 }} />{/* Ver */}
+            </colgroup>
             <thead>
               <tr style={{ background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 1 }}>
-                {['Fecha','Tipo','Autor','Mensaje / Archivo','Ver'].map((h, i) => (
+                {['Fecha','Tipo','Autor','Mensaje','Ver'].map((h, i) => (
                   <th key={h} style={{
-                    padding: '8px 10px', textAlign: i === 4 ? 'center' : 'left',
+                    padding: '8px 6px', textAlign: i === 4 ? 'center' : 'left',
                     fontWeight: 700, fontSize: 11, color: 'var(--text2)',
-                    borderBottom: '2px solid var(--border)', whiteSpace: 'nowrap',
+                    borderBottom: '2px solid var(--border)',
                   }}>{h}</th>
                 ))}
               </tr>
@@ -218,31 +225,31 @@ function VistaArchivos({ carpeta, onVolver }) {
             <tbody>
               {lista.map((r, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'var(--surface)' }}>
-                  <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--text3)', verticalAlign: 'top' }}>
+                  <td style={{ padding: '7px 6px', color: 'var(--text3)', verticalAlign: 'top', fontSize: 11 }}>
                     {r.fecha || '—'}
                   </td>
-                  <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                  <td style={{ padding: '7px 4px', verticalAlign: 'top' }}>
                     <span style={{
-                      fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
+                      fontSize: 9, fontWeight: 700, padding: '2px 4px', borderRadius: 4, display: 'inline-block',
                       background: r.tipo === 'texto' ? '#f3f4f6' : BADGE_COLOR[r.tipo],
                       color: r.tipo === 'texto' ? 'var(--text3)' : BADGE_TEXT[r.tipo],
                     }}>
                       {r.tipo === 'texto' ? 'TEXTO' : TIPO_BADGE[r.tipo]}
                     </span>
                   </td>
-                  <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text2)', verticalAlign: 'top' }}>
+                  <td style={{ padding: '7px 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text2)', verticalAlign: 'top', fontSize: 11 }}>
                     {r.autor ? r.autor.replace(/^Inq\s+/i, '') : '—'}
                   </td>
-                  <td style={{ padding: '7px 10px', maxWidth: 220, verticalAlign: 'top' }}>
-                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', color: r.esArchivo ? 'var(--text)' : 'var(--text2)' }}>
+                  <td style={{ padding: '7px 6px', verticalAlign: 'top' }}>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', color: r.esArchivo ? 'var(--text)' : 'var(--text2)' }}>
                       {r.contenido}
                     </div>
                   </td>
-                  <td style={{ padding: '7px 10px', textAlign: 'center', verticalAlign: 'top' }}>
+                  <td style={{ padding: '7px 4px', textAlign: 'center', verticalAlign: 'top' }}>
                     {r.path
                       ? <BtnVer path={r.path} />
                       : r.esArchivo
-                        ? <span style={{ fontSize: 11, color: 'var(--text3)' }}>no está</span>
+                        ? <span style={{ fontSize: 10, color: 'var(--text3)' }}>—</span>
                         : null}
                   </td>
                 </tr>
