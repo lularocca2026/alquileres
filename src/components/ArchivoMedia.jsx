@@ -43,160 +43,81 @@ function publicUrl(carpeta, archivo) {
 
 // ─── Vista de archivos de una carpeta ─────────────────────────────────────────
 function VistaArchivos({ carpeta, onVolver }) {
-  const [archivos, setArchivos] = useState([])
-  const [resumen, setResumen] = useState(null)
+  const [registros, setRegistros] = useState([])
   const [cargando, setCargando] = useState(true)
-  const [tab, setTab] = useState('archivos')
 
   useEffect(() => {
-    // Cargar lista de archivos
-    supabase.storage.from(BUCKET).list(carpeta, { limit: 500 })
-      .then(({ data }) => {
-        const EXCLUIR = ['_resumen.json', '_chat.txt']
-        const lista = (data || [])
-          .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
-        // Ordenar: excel/pdf arriba, luego resto por nombre
-        lista.sort((a, b) => {
-          const prioridad = n => { const t = tipoArchivo(n); return t === 'excel' ? 0 : t === 'pdf' ? 1 : 2 }
-          const pa = prioridad(a.name), pb = prioridad(b.name)
-          if (pa !== pb) return pa - pb
-          return a.name.localeCompare(b.name)
-        })
-        setArchivos(lista)
-        setCargando(false)
-      })
-      .catch(() => setCargando(false))
+    async function cargar() {
+      const EXCLUIR = ['_resumen.json', '_chat.txt']
+      const [{ data: storageData }, resumenData] = await Promise.all([
+        supabase.storage.from(BUCKET).list(carpeta, { limit: 500 }),
+        fetch(publicUrl(carpeta, '_resumen.json')).then(r => r.ok ? r.json() : null).catch(() => null),
+      ])
 
-    // Cargar resumen del chat si existe
-    const url = publicUrl(carpeta, '_resumen.json')
-    fetch(url)
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.mensajes) setResumen(d) })
-      .catch(() => {})
+      const archivosStorage = (storageData || [])
+        .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
+
+      const mensajesConArchivo = resumenData?.mensajes?.filter(m => m.url) || []
+      const nombresConFecha = new Set(mensajesConArchivo.map(m => m.archivo?.toLowerCase()))
+
+      const lista = [
+        ...mensajesConArchivo.map(m => ({
+          tipo: tipoArchivo(m.archivo || ''),
+          fecha: m.fecha_str || null,
+          url: m.url,
+        })),
+        ...archivosStorage
+          .filter(f => !nombresConFecha.has(f.name.toLowerCase()))
+          .map(f => ({
+            tipo: tipoArchivo(f.name),
+            fecha: null,
+            url: publicUrl(carpeta, f.name),
+          })),
+      ]
+
+      setRegistros(lista)
+      setCargando(false)
+    }
+    cargar()
   }, [carpeta])
 
-  function descargarIndice() {
-    const filas = [['Nombre', 'Tipo', 'Link']]
-    for (const f of archivos) {
-      filas.push([f.name, tipoArchivo(f.name), publicUrl(carpeta, f.name)])
-    }
-    const csv = filas.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `archivos_${titulo.replace(/[^a-z0-9]/gi, '_').slice(0, 40)}.csv`
-    a.click()
-  }
-
   const titulo = carpeta.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
-  const mensajesConArchivo = resumen?.mensajes?.filter(m => m.url) || []
-  const mensajesTexto = resumen?.mensajes?.filter(m => m.texto && !m.url && m.texto.length > 3) || []
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="header">
         <button className="back-btn" onClick={onVolver}>←</button>
         <h1 style={{ fontSize: 16 }}>{titulo}</h1>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-        {['archivos', resumen && 'chat'].filter(Boolean).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{
-              flex: 1, padding: '10px', fontSize: 13, border: 'none', cursor: 'pointer',
-              background: tab === t ? 'white' : 'transparent',
-              color: tab === t ? 'var(--navy)' : 'var(--text3)',
-              fontWeight: tab === t ? 600 : 400,
-              borderBottom: tab === t ? '2px solid var(--blue1)' : '2px solid transparent',
-            }}>
-            {t === 'archivos' ? `📁 Archivos (${archivos.length})` : `💬 Chat (${resumen?.total_mensajes || 0})`}
-          </button>
-        ))}
+        {!cargando && <span style={{ fontSize: 13, color: 'var(--text3)' }}>{registros.length}</span>}
       </div>
 
       <div className="content">
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
 
-        {/* Tab archivos */}
-        {tab === 'archivos' && !cargando && (
-          <>
-            {archivos.length === 0 && (
-              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin archivos</div>
-            )}
-            {archivos.length > 0 && (
-              <div style={{ marginBottom: 8 }}>
-                <button onClick={descargarIndice}
-                  style={{ width: '100%', padding: '10px 14px', background: '#1a7f45', color: 'white',
-                    border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                  📊 Descargar índice con links ({archivos.length} archivos)
-                </button>
-              </div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {archivos.map(f => {
-                const tipo = tipoArchivo(f.name)
-                return (
-                  <a key={f.name} href={publicUrl(carpeta, f.name)} target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                      background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)',
-                      color: 'var(--text)', textDecoration: 'none' }}>
-                    <span style={{ fontSize: 20, flexShrink: 0 }}>{ICONOS[tipo]}</span>
-                    <span style={{ fontSize: 13, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                    <span style={{ fontSize: 13, color: 'var(--blue1)', flexShrink: 0 }}>↗</span>
-                  </a>
-                )
-              })}
+        {!cargando && registros.length === 0 && (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Sin archivos</div>
+        )}
+
+        {registros.map((r, i) => (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px',
+            borderBottom: '1px solid var(--border)',
+          }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{ICONOS[r.tipo]}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 500, textTransform: 'capitalize' }}>{r.tipo}</div>
+              {r.fecha && <div style={{ fontSize: 12, color: 'var(--text3)' }}>{r.fecha}</div>}
             </div>
-          </>
-        )}
-
-        {/* Tab chat */}
-        {tab === 'chat' && resumen && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {/* Archivos mencionados en el chat */}
-            {mensajesConArchivo.length > 0 && (
-              <>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 4 }}>
-                  Archivos compartidos
-                </div>
-                {mensajesConArchivo.map((m, i) => (
-                  <a key={i} href={m.url} target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                      background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)',
-                      color: 'var(--text)', textDecoration: 'none' }}>
-                    <span style={{ fontSize: 20, flexShrink: 0 }}>{ICONOS[tipoArchivo(m.archivo || '')]}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.archivo}</div>
-                      {m.fecha_str && <div style={{ fontSize: 11, color: 'var(--text3)' }}>{m.fecha_str} · {m.autor}</div>}
-                    </div>
-                    <span style={{ fontSize: 13, color: 'var(--blue1)', flexShrink: 0 }}>↗</span>
-                  </a>
-                ))}
-                <div style={{ height: 12 }} />
-              </>
-            )}
-
-            {/* Mensajes de texto */}
-            {mensajesTexto.length > 0 && (
-              <>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 4 }}>
-                  Mensajes
-                </div>
-                {mensajesTexto.map((m, i) => (
-                  <div key={i} style={{ padding: '10px 14px', background: 'var(--surface)',
-                    borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4 }}>
-                      {m.fecha_str} · <strong>{m.autor}</strong>
-                    </div>
-                    <div style={{ fontSize: 13 }}>{m.texto}</div>
-                  </div>
-                ))}
-              </>
-            )}
+            <a href={r.url} target="_blank" rel="noopener noreferrer"
+              style={{
+                width: 34, height: 34, borderRadius: 8, flexShrink: 0, textDecoration: 'none',
+                background: 'var(--accent)', color: 'white',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15,
+              }}>
+              ↗
+            </a>
           </div>
-        )}
+        ))}
       </div>
     </div>
   )
