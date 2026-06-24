@@ -41,6 +41,15 @@ function publicUrl(carpeta, archivo) {
   return `${base}/storage/v1/object/public/${BUCKET}/${path}`
 }
 
+function limpiarNombre(s) {
+  return s.replace(/[°º]/g, '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
+}
+
+function computarUrl(carpeta, archivo) {
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${carpeta}/${limpiarNombre(archivo)}`)
+  return data?.publicUrl || null
+}
+
 function parseFechaChat(s) {
   if (!s) return 0
   const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{2})/)
@@ -77,15 +86,10 @@ function VistaArchivos({ carpeta, onVolver }) {
       const archivosStorage = (storageData || [])
         .filter(f => f.name && !EXCLUIR.includes(f.name) && !f.name.endsWith('.txt'))
 
-      // Mismo método que ImportarZip: getPublicUrl (sincrónico, mismo bucket público)
-      const urlMap = {}
-      for (const f of archivosStorage) {
-        const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${carpeta}/${f.name}`)
-        if (data?.publicUrl) urlMap[f.name.toLowerCase()] = data.publicUrl
-      }
-
       if (resumenData?.mensajes?.length) {
-        const nombresResumen = new Set(resumenData.mensajes.map(m => m.archivo?.toLowerCase()).filter(Boolean))
+        const nombresResumen = new Set(
+          resumenData.mensajes.filter(m => m.archivo).map(m => limpiarNombre(m.archivo).toLowerCase())
+        )
         const lista = [
           ...resumenData.mensajes
             .filter(m => m.archivo || (m.texto && m.texto.trim().length > 3))
@@ -95,8 +99,8 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: m.autor || null,
               contenido: m.archivo || m.texto?.trim() || '',
               esArchivo: !!m.archivo,
-              // m.url viene del import (ya es publicUrl), fallback a urlMap
-              url: m.archivo ? (m.url || urlMap[m.archivo.toLowerCase()] || null) : null,
+              // m.url viene del import (publicUrl guardado), fallback a computarUrl
+              url: m.archivo ? (m.url || computarUrl(carpeta, m.archivo)) : null,
               ts: parseFechaChat(m.fecha_str),
             })),
           ...archivosStorage
@@ -107,7 +111,7 @@ function VistaArchivos({ carpeta, onVolver }) {
               autor: null,
               contenido: f.name,
               esArchivo: true,
-              url: urlMap[f.name.toLowerCase()] || null,
+              url: computarUrl(carpeta, f.name),
               ts: f.created_at ? new Date(f.created_at).getTime() : 0,
             })),
         ].sort((a, b) => a.ts - b.ts)
@@ -119,7 +123,7 @@ function VistaArchivos({ carpeta, onVolver }) {
           autor: null,
           contenido: f.name,
           esArchivo: true,
-          url: urlMap[f.name.toLowerCase()] || null,
+          url: computarUrl(carpeta, f.name),
           ts: f.created_at ? new Date(f.created_at).getTime() : 0,
         })).sort((a, b) => a.ts - b.ts)
         setRegistros(lista)
