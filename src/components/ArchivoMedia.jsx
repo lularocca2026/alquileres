@@ -109,7 +109,6 @@ function BtnVer({ path }) {
 // ─── Vista de archivos de una carpeta ─────────────────────────────────────────
 function VistaArchivos({ carpeta, onVolver }) {
   const [registros, setRegistros] = useState([])
-  const [soloArchivos, setSoloArchivos] = useState(false)
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -187,7 +186,7 @@ function VistaArchivos({ carpeta, onVolver }) {
   }, [carpeta])
 
   const titulo = carpeta.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
-  const lista = soloArchivos ? registros.filter(r => r.esArchivo) : registros
+  const lista = registros
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
@@ -196,22 +195,6 @@ function VistaArchivos({ carpeta, onVolver }) {
         <h1 style={{ fontSize: 15 }}>{titulo}</h1>
         {!cargando && <span style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }}>{lista.length}</span>}
       </div>
-
-      {/* Filtro */}
-      {!cargando && registros.some(r => !r.esArchivo) && (
-        <div style={{ display: 'flex', gap: 8, padding: '8px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-          {[false, true].map(v => (
-            <button key={String(v)} onClick={() => setSoloArchivos(v)}
-              style={{
-                padding: '5px 14px', borderRadius: 20, fontSize: 13, border: '1px solid var(--border)',
-                background: soloArchivos === v ? 'var(--accent)' : 'transparent',
-                color: soloArchivos === v ? 'white' : 'var(--text2)', cursor: 'pointer',
-              }}>
-              {v ? 'Solo archivos' : 'Todo'}
-            </button>
-          ))}
-        </div>
-      )}
 
       <div style={{ overflowX: 'auto', flex: 1 }}>
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
