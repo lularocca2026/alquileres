@@ -713,45 +713,45 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
                 </div>
                 <button
                   className="btn btn-primary btn-full"
-                  style={{ marginBottom: 10 }}
                   onClick={() => setNuevoContrato(true)}
                 >
                   + Crear nuevo contrato
                 </button>
-                {contratosAnteriores.length > 0 && (
-                  <>
-                    <div style={{ fontSize: 12, color: 'var(--text3)', margin: '12px 0 8px', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
-                      Contratos anteriores
-                    </div>
-                    {contratosAnteriores.map(c => {
-                      const inq = getInquilino(c.IdInquilino)
-                      return (
-                        <div key={c.IdContrato} style={{
-                          background: 'var(--bg)', borderRadius: 10, padding: '12px 14px',
-                          marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10,
-                        }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 500, fontSize: 14 }}>{inq?.Apellido || 'Inquilino'}</div>
-                            <div style={{ fontSize: 12, color: 'var(--text3)' }}>
-                              {formatFecha(c.FechaInicio)} → {formatFecha(c.FechaFin)}
-                              {' · '}{formatPesos(c.MontoInicial)}
-                            </div>
-                            {c.archivado && (
-                              <span className="badge badge-gray" style={{ marginTop: 4, fontSize: 11 }}>Archivado</span>
-                            )}
-                          </div>
-                          <button
-                            className="btn btn-secondary"
-                            style={{ padding: '6px 12px', fontSize: 13, flexShrink: 0 }}
-                            onClick={() => editarContrato(c.IdContrato, { activo: true, archivado: false })}
-                          >
-                            Reactivar
-                          </button>
+              </div>
+            )}
+            {/* Contratos anteriores / archivados: siempre visibles en la pestaña Contrato */}
+            {tabEfectivo === 'contrato' && contratosAnteriores.length > 0 && (
+              <div style={{ marginTop: contrato ? 20 : 12, paddingTop: contrato ? 16 : 0, borderTop: contrato ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
+                  Contratos anteriores
+                </div>
+                {contratosAnteriores.map(c => {
+                  const inq = getInquilino(c.IdInquilino)
+                  return (
+                    <div key={c.IdContrato} style={{
+                      background: 'var(--bg)', borderRadius: 10, padding: '12px 14px',
+                      marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10,
+                    }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500, fontSize: 14 }}>{inq?.Apellido || 'Inquilino'}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text3)' }}>
+                          {formatFecha(c.FechaInicio)} → {formatFecha(c.FechaFin)}
+                          {' · '}{formatPesos(c.MontoInicial)}
                         </div>
-                      )
-                    })}
-                  </>
-                )}
+                        {c.archivado && (
+                          <span className="badge badge-gray" style={{ marginTop: 4, fontSize: 11 }}>Archivado</span>
+                        )}
+                      </div>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ padding: '6px 12px', fontSize: 13, flexShrink: 0 }}
+                        onClick={() => editarContrato(c.IdContrato, { activo: true, archivado: false })}
+                      >
+                        Reactivar
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             )}
             {tabEfectivo === 'mantenimiento' && <TabMantenimiento idPropiedad={idPropiedad} />}
