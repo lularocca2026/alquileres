@@ -42,12 +42,14 @@ export function estadoICL(contrato) {
   if (!contrato || !contrato.activo || contrato.archivado) return null
   const ciclo = cicloICL(contrato.TipoAjuste)
   if (!ciclo) return null // sin ajuste periódico reconocible
-  const fechaRef = parseLocalDate(contrato.fechaUltimoAumento || contrato.FechaInicio)
-  if (!fechaRef || isNaN(fechaRef)) return null
+  // ¿pospuesto manualmente?
   if (contrato.iclPospuestoHasta) {
     const hasta = parseLocalDate(contrato.iclPospuestoHasta)
     if (hasta && new Date() < hasta) return null
   }
+  const fechaRef = parseLocalDate(contrato.fechaUltimoAumento || contrato.FechaInicio)
+  // Sin fecha base (nunca se ajustó y sin inicio cargado): corresponde definir el ajuste ahora
+  if (!fechaRef || isNaN(fechaRef)) return 'corresponde'
   const hoy = new Date()
   const meses = (hoy.getFullYear() - fechaRef.getFullYear()) * 12 + (hoy.getMonth() - fechaRef.getMonth())
   if (meses >= ciclo) return 'corresponde'
