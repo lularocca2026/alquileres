@@ -18,26 +18,30 @@ export function registrarActualizacion(contrato, nuevoMonto, tipo, editarContrat
   })
 }
 
-// Cada cuántos meses corresponde el ajuste según el tipo (ICL suele ser trimestral)
+// Cada cuántos meses corresponde el ajuste según el tipo. Devuelve el ciclo en
+// meses, o null si el contrato no tiene un ajuste periódico reconocible.
 export function cicloICL(tipoAjuste) {
   const t = (tipoAjuste || '').toLowerCase()
   // Formato numérico explícito: "ICL 3 meses", "cada 6 meses", "ajuste 4 mes"
   const m = t.match(/(\d+)\s*mes/)
-  if (m) return parseInt(m[1]) || 3
+  if (m) return parseInt(m[1]) || null
+  if (t.includes('mensual')) return 1
   if (t.includes('bimestr')) return 2
   if (t.includes('cuatrimestr')) return 4
   if (t.includes('trimestr')) return 3
   if (t.includes('semestr')) return 6
   if (t.includes('anual') || t.includes('año') || t.includes('ano')) return 12
-  return 3
+  // ICL / índice sin período explícito → trimestral (lo habitual)
+  if (t.includes('icl') || t.includes('indice') || t.includes('índice')) return 3
+  return null
 }
 
 // Estado de ajuste de un contrato: 'corresponde' (toca este mes o ya pasó),
 // 'proximo' (toca el mes que viene) o null (no aplica / no es ICL / pospuesto)
 export function estadoICL(contrato) {
   if (!contrato || !contrato.activo || contrato.archivado) return null
-  const ajuste = (contrato.TipoAjuste || '').toLowerCase()
-  if (!ajuste.includes('icl') && !ajuste.includes('indice')) return null
+  const ciclo = cicloICL(contrato.TipoAjuste)
+  if (!ciclo) return null // sin ajuste periódico reconocible
   const fechaRef = parseLocalDate(contrato.fechaUltimoAumento || contrato.FechaInicio)
   if (!fechaRef || isNaN(fechaRef)) return null
   if (contrato.iclPospuestoHasta) {
@@ -46,7 +50,6 @@ export function estadoICL(contrato) {
   }
   const hoy = new Date()
   const meses = (hoy.getFullYear() - fechaRef.getFullYear()) * 12 + (hoy.getMonth() - fechaRef.getMonth())
-  const ciclo = cicloICL(contrato.TipoAjuste)
   if (meses >= ciclo) return 'corresponde'
   if (meses === ciclo - 1) return 'proximo'
   return null
@@ -60,8 +63,8 @@ export function usePendientesICL() {
   return contratos
     .filter(c => {
       if (!c.activo || c.archivado) return false
-      const ajuste = (c.TipoAjuste || '').toLowerCase()
-      if (!ajuste.includes('icl') && !ajuste.includes('indice')) return false
+      const ciclo = cicloICL(c.TipoAjuste)
+      if (!ciclo) return false
 
       // Fecha de referencia: última actualización o inicio del contrato
       const fechaRef = parseLocalDate(c.fechaUltimoAumento || c.FechaInicio)
@@ -78,7 +81,7 @@ export function usePendientesICL() {
         if (hasta && hoy < hasta) return false
       }
 
-      return meses >= cicloICL(c.TipoAjuste)
+      return meses >= ciclo
     })
     .map(c => {
       const fechaRef = parseLocalDate(c.fechaUltimoAumento || c.FechaInicio)
