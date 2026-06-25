@@ -592,12 +592,32 @@ function EditarInquilinoModal({ inquilino, onGuardar, onCerrar }) {
   )
 }
 
+function EditarPropiedadModal({ propiedad, onGuardar, onCerrar }) {
+  const [form, setForm] = useState({ ...propiedad })
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  return (
+    <Modal titulo="Editar propiedad" onCerrar={onCerrar} onGuardar={() => onGuardar(form)}>
+      <Campo label="Dirección / Nombre">
+        <Input value={form.Direccion || ''} onChange={v => set('Direccion', v)} placeholder="Ej: Salta PB D" />
+      </Campo>
+      <Campo label="Tipo">
+        <Input value={form.Tipo || ''} onChange={v => set('Tipo', v)} placeholder="Ej: Departamento" />
+      </Campo>
+      <Campo label="Ciudad">
+        <Input value={form.Ciudad || ''} onChange={v => set('Ciudad', v)} placeholder="Ej: Cipolletti" />
+      </Campo>
+    </Modal>
+  )
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) {
-  const { getPropiedad, getContratoActivo, getContratosPropiedad, getInquilino, editarInquilino, editarContrato, agregarContrato, agregarInquilino, inquilinos } = useData()
+  const { getPropiedad, getContratoActivo, getContratosPropiedad, getInquilino, editarInquilino, editarContrato, editarPropiedad, agregarContrato, agregarInquilino, inquilinos } = useData()
   const [tab, setTab] = useState('pagos')
   const [editandoInq, setEditandoInq] = useState(false)
+  const [editandoProp, setEditandoProp] = useState(false)
   const [nuevoContrato, setNuevoContrato] = useState(false)
 
   const propiedad = getPropiedad(idPropiedad)
@@ -620,12 +640,16 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="header">
         <button className="back-btn" onClick={onVolver}>←</button>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ fontSize: 16 }}>{propiedad.Direccion}</h1>
           <div style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 400 }}>
             {propiedad.Tipo} · {propiedad.Ciudad}
           </div>
         </div>
+        <button onClick={() => setEditandoProp(true)}
+          style={{ flexShrink: 0, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 15 }}>
+          ✏
+        </button>
       </div>
 
       <div className="content">
@@ -740,6 +764,14 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
           inquilino={inquilino}
           onCerrar={() => setEditandoInq(false)}
           onGuardar={datos => { editarInquilino(inquilino.IdInquilino, datos); setEditandoInq(false) }}
+        />
+      )}
+
+      {editandoProp && (
+        <EditarPropiedadModal
+          propiedad={propiedad}
+          onCerrar={() => setEditandoProp(false)}
+          onGuardar={datos => { editarPropiedad(propiedad.IdPropiedad, datos); setEditandoProp(false) }}
         />
       )}
 
