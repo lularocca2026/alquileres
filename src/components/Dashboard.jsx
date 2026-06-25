@@ -122,8 +122,15 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
           )}
           {!contrato && <div />}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {dias !== null && dias < 0 && <span className="badge badge-red">Contrato vencido</span>}
-            {dias !== null && dias >= 0 && dias <= 60 && <span className="badge badge-orange">Vence en {dias}d</span>}
+            {dias !== null && (
+              <span className="badge" style={{
+                whiteSpace: 'nowrap',
+                background: dias < 90 ? '#fee2e2' : 'var(--surface2)',
+                color: dias < 90 ? 'var(--red)' : 'var(--text3)',
+              }}>
+                {dias < 0 ? `Venció hace ${Math.abs(dias)} días` : `Faltan ${dias} días`}
+              </span>
+            )}
             <button
               onClick={e => { e.stopPropagation(); onArchivos(apellido) }}
               title="Ver archivos importados"
