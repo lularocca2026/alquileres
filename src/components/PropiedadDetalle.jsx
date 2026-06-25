@@ -542,8 +542,16 @@ function TabMantenimiento({ idPropiedad }) {
         <span style={{ fontSize: 13, color: 'var(--text2)' }}>
           Total: <strong>{formatPesos(total)}</strong>
         </span>
-        <button className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => setModal('nuevo')}>
-          + Agregar
+        <button
+          onClick={() => setModal('nuevo')}
+          style={{
+            padding: '9px 18px', fontSize: 14, fontWeight: 700, color: 'white',
+            border: 'none', borderRadius: 10, cursor: 'pointer',
+            background: 'linear-gradient(180deg, var(--blue2), var(--blue1))',
+            boxShadow: '0 3px 8px rgba(37,99,235,0.40), 0 1px 2px rgba(0,0,0,0.12)',
+          }}
+        >
+          + Agregar gasto
         </button>
       </div>
 
