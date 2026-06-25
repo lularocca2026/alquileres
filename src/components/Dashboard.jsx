@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useData } from '../DataContext.jsx'
 import { supabase } from '../supabase.js'
 import { formatPesos, diasParaVencer, formatFecha } from '../utils.js'
-import { BannerICL, AlertasICLModal } from './ActualizacionICL.jsx'
+import { BannerICL, AlertasICLModal, estadoICL } from './ActualizacionICL.jsx'
 
 function estadoPago(pagos, contrato) {
   if (!contrato) return null
@@ -89,6 +89,7 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
   const pagos = contrato ? getPagosContrato(contrato.IdContrato) : []
   const estado = estadoPago(pagos, contrato)
   const dias = contrato ? diasParaVencer(contrato.FechaFin) : null
+  const iclEstado = contrato ? estadoICL(contrato) : null
   const apellido = inquilino?.Apellido?.split(/[\s/]/)[0] || ''
 
   return (
@@ -117,6 +118,19 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
         {inquilino && (
           <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 8 }}>
             👤 {inquilino.Apellido}
+          </div>
+        )}
+
+        {iclEstado && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 12, fontWeight: 600, marginBottom: 8,
+            padding: '6px 10px', borderRadius: 8,
+            background: iclEstado === 'corresponde' ? '#FEF3C7' : 'var(--surface2)',
+            color: iclEstado === 'corresponde' ? '#92400E' : 'var(--text3)',
+            border: `1px solid ${iclEstado === 'corresponde' ? '#FDE68A' : 'var(--border)'}`,
+          }}>
+            {iclEstado === 'corresponde' ? '🔔 Actualizar alquiler antes de cobrar' : '📅 Actualizar el mes próximo'}
           </div>
         )}
 
