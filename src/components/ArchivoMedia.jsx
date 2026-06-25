@@ -283,10 +283,11 @@ function ArchivoMediaInner({ onVolver, chatInicial, onImportar }) {
         const todas = (data || []).filter(i => !i.metadata)
         setCarpetas(todas)
         setCargando(false)
-        // Auto-abrir solo si hay exactamente 1 coincidencia
         if (chatInicial) {
           const matches = todas.filter(c => palabrasMatch(c.name, chatInicial))
+          // 1 coincidencia → abrir directo; 0 → no hay archivos, ir a importar
           if (matches.length === 1) setCarpetaAbierta(matches[0].name)
+          else if (matches.length === 0 && onImportar) onImportar()
         }
       })
       .catch(() => setCargando(false))
