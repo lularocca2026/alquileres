@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useData } from '../DataContext.jsx'
-import { formatPesos, formatFecha, isoHoy } from '../utils.js'
+import { formatPesos, formatFecha, isoHoy, parseLocalDate } from '../utils.js'
 
 export const ARQUILER_URL = 'https://arquiler.com/'
 
@@ -30,8 +30,8 @@ export function usePendientesICL() {
       if (!ajuste.includes('icl') && !ajuste.includes('indice')) return false
 
       // Fecha de referencia: última actualización o inicio del contrato
-      const fechaRef = new Date(c.fechaUltimoAumento || c.FechaInicio)
-      if (isNaN(fechaRef)) return false
+      const fechaRef = parseLocalDate(c.fechaUltimoAumento || c.FechaInicio)
+      if (!fechaRef || isNaN(fechaRef)) return false
 
       // Calcular meses transcurridos
       const meses =
@@ -40,14 +40,14 @@ export function usePendientesICL() {
 
       // Pospuesto?
       if (c.iclPospuestoHasta) {
-        const hasta = new Date(c.iclPospuestoHasta)
-        if (hoy < hasta) return false
+        const hasta = parseLocalDate(c.iclPospuestoHasta)
+        if (hasta && hoy < hasta) return false
       }
 
       return meses >= 3
     })
     .map(c => {
-      const fechaRef = new Date(c.fechaUltimoAumento || c.FechaInicio)
+      const fechaRef = parseLocalDate(c.fechaUltimoAumento || c.FechaInicio)
       const meses =
         (hoy.getFullYear() - fechaRef.getFullYear()) * 12 +
         (hoy.getMonth() - fechaRef.getMonth())

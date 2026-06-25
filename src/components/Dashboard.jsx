@@ -9,8 +9,8 @@ function estadoPago(pagos, contrato) {
   const hoy = new Date()
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
   const pagoMes = pagos.find(p => {
-    const d = new Date(p.Periodo)
-    const mes = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    // Mes del período tomado del string guardado (evita corrimiento por zona horaria)
+    const mes = String(p.Periodo || '').split('T')[0].slice(0, 7)
     return mes === mesActual && p.Pagado
   })
   return pagoMes ? 'pagado' : 'pendiente'
