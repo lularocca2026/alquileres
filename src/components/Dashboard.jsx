@@ -8,6 +8,9 @@ function estadoPago(pagos, contrato) {
   if (!contrato) return null
   const hoy = new Date()
   const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
+  // Contrato que todavía no empezó (arranca en un mes futuro): aún no corresponde pago
+  const mesInicio = String(contrato.FechaInicio || '').split('T')[0].slice(0, 7)
+  if (mesInicio && mesInicio > mesActual) return 'futuro'
   const pagoMes = pagos.find(p => {
     // Mes del período tomado del string guardado (evita corrimiento por zona horaria)
     const mes = String(p.Periodo || '').split('T')[0].slice(0, 7)
@@ -56,6 +59,7 @@ function ResumenTotales({ propiedades }) {
     const pagos = getPagosContrato(contrato.IdContrato)
     const estado = estadoPago(pagos, contrato)
     totalMes += contrato.MontoInicial || 0
+    if (estado === 'futuro') continue // todavía no empezó: no cuenta como pagado ni pendiente
     if (estado === 'pagado') pagados++
     else pendientes++
   }
@@ -98,7 +102,10 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {contrato && (
+            {contrato && estado === 'futuro' && (
+              <span className="badge badge-gray">Por comenzar</span>
+            )}
+            {contrato && estado !== 'futuro' && (
               <span className={`badge ${estado === 'pagado' ? 'badge-green' : 'badge-red'}`}>
                 {estado === 'pagado' ? '✓ Pagado' : '⏳ Pendiente'}
               </span>
