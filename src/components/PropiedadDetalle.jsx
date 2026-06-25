@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useData } from '../DataContext.jsx'
-import { formatPesos, formatUSD, formatFecha, formatMes, diasParaVencer } from '../utils.js'
+import { formatPesos, formatUSD, formatFecha, formatMes, diasParaVencer, isoHoy } from '../utils.js'
 import EditarPagoModal from './EditarPagoModal.jsx'
 import EditarContratoModal from './EditarContratoModal.jsx'
 import EditarMantModal from './EditarMantModal.jsx'
@@ -510,7 +510,27 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
         <EditarContratoModal
           contrato={contrato}
           onCerrar={() => setEditando(false)}
-          onGuardar={datos => { editarContrato(contrato.IdContrato, datos); setEditando(false) }}
+          onGuardar={datos => {
+            const nuevoMonto = parseFloat(datos.MontoInicial) || 0
+            const anterior = contrato.MontoInicial || 0
+            // Si cambió el monto, registrar la fecha del aumento (reinicia el ciclo de ajuste)
+            const extra = nuevoMonto !== anterior ? {
+              fechaUltimoAumento: isoHoy(),
+              iclPospuestoHasta: null,
+              historialICL: [
+                ...(contrato.historialICL || []),
+                {
+                  fecha: isoHoy(),
+                  montoAnterior: anterior,
+                  montoNuevo: nuevoMonto,
+                  porcentaje: anterior ? parseFloat((((nuevoMonto - anterior) / anterior) * 100).toFixed(2)) : 0,
+                  tipo: 'manual',
+                },
+              ],
+            } : {}
+            editarContrato(contrato.IdContrato, { ...datos, ...extra })
+            setEditando(false)
+          }}
         />
       )}
 
