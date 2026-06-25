@@ -401,7 +401,15 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
       {/* Datos del contrato */}
       <div className="item-row">
         <div><div className="item-label">Inicio</div><div className="item-value">{formatFecha(contrato.FechaInicio)}</div></div>
-        <div><div className="item-label">Vencimiento</div><div className="item-value">{formatFecha(contrato.FechaFin)}</div></div>
+        <div>
+          <div className="item-label">Vencimiento</div>
+          <div className="item-value">{formatFecha(contrato.FechaFin)}</div>
+          {dias !== null && (
+            <div style={{ fontSize: 12, fontWeight: 600, marginTop: 2, color: dias < 90 ? 'var(--red)' : 'var(--text3)' }}>
+              {dias < 0 ? `Venció hace ${Math.abs(dias)} días` : `Faltan ${dias} días`}
+            </div>
+          )}
+        </div>
       </div>
       <div className="item-row">
         <div><div className="item-label">Monto actual</div><div className="item-value" style={{ color: 'var(--accent)' }}>{formatPesos(contrato.MontoInicial)}</div></div>
