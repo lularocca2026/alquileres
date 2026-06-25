@@ -21,6 +21,9 @@ export function registrarActualizacion(contrato, nuevoMonto, tipo, editarContrat
 // Cada cuántos meses corresponde el ajuste según el tipo (ICL suele ser trimestral)
 export function cicloICL(tipoAjuste) {
   const t = (tipoAjuste || '').toLowerCase()
+  // Formato numérico explícito: "ICL 3 meses", "cada 6 meses", "ajuste 4 mes"
+  const m = t.match(/(\d+)\s*mes/)
+  if (m) return parseInt(m[1]) || 3
   if (t.includes('bimestr')) return 2
   if (t.includes('cuatrimestr')) return 4
   if (t.includes('trimestr')) return 3
