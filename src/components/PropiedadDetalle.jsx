@@ -592,6 +592,58 @@ function EditarInquilinoModal({ inquilino, onGuardar, onCerrar }) {
   )
 }
 
+function VerContratoModal({ contrato, inquilino, onCerrar, onReactivar }) {
+  const esUSD = contrato.depositoMoneda === 'USD'
+  return (
+    <Modal titulo="Contrato archivado" onCerrar={onCerrar}>
+      <div className="item-row">
+        <div><div className="item-label">Inquilino</div><div className="item-value">{inquilino?.Apellido || '—'}</div></div>
+        {contrato.archivado && <span className="badge badge-gray" style={{ fontSize: 11 }}>Archivado</span>}
+      </div>
+      <div className="item-row">
+        <div><div className="item-label">Inicio</div><div className="item-value">{formatFecha(contrato.FechaInicio)}</div></div>
+        <div><div className="item-label">Vencimiento</div><div className="item-value">{formatFecha(contrato.FechaFin)}</div></div>
+      </div>
+      <div className="item-row">
+        <div><div className="item-label">Monto</div><div className="item-value" style={{ color: 'var(--accent)' }}>{formatPesos(contrato.MontoInicial)}</div></div>
+        <div><div className="item-label">Ajuste</div><div className="item-value">{contrato.TipoAjuste || '—'}</div></div>
+      </div>
+      {contrato.MontoAnterior > 0 && (
+        <div className="item-row">
+          <div className="item-label">Monto anterior</div>
+          <div className="item-value">{formatPesos(contrato.MontoAnterior)}</div>
+        </div>
+      )}
+      {contrato.Deposito > 0 && (
+        <div className="item-row">
+          <div>
+            <div className="item-label">Depósito en garantía</div>
+            <div className="item-value">
+              {esUSD ? formatUSD(contrato.Deposito) : formatPesos(contrato.Deposito)}
+              <span className={`badge ${esUSD ? 'badge-green' : 'badge-blue'}`} style={{ marginLeft: 6, fontSize: 11 }}>
+                {esUSD ? 'USD' : 'ARS'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+      {contrato.notas && (
+        <div className="item-row">
+          <div>
+            <div className="item-label">Notas</div>
+            <div style={{ fontSize: 14, whiteSpace: 'pre-line' }}>{contrato.notas}</div>
+          </div>
+        </div>
+      )}
+      {onReactivar && (
+        <button className="btn btn-secondary btn-full" style={{ marginTop: 8, color: 'var(--text2)' }} onClick={onReactivar}>
+          Reactivar este contrato
+        </button>
+      )}
+    </Modal>
+  )
+}
+
 function EditarPropiedadModal({ propiedad, onGuardar, onCerrar }) {
   const [form, setForm] = useState({ ...propiedad })
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
@@ -619,6 +671,7 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
   const [editandoInq, setEditandoInq] = useState(false)
   const [editandoProp, setEditandoProp] = useState(false)
   const [nuevoContrato, setNuevoContrato] = useState(false)
+  const [verContrato, setVerContrato] = useState(null)
 
   const propiedad = getPropiedad(idPropiedad)
   if (!propiedad) return null
@@ -728,9 +781,9 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
                 {contratosAnteriores.map(c => {
                   const inq = getInquilino(c.IdInquilino)
                   return (
-                    <div key={c.IdContrato} style={{
+                    <div key={c.IdContrato} onClick={() => setVerContrato(c)} style={{
                       background: 'var(--bg)', borderRadius: 10, padding: '12px 14px',
-                      marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10,
+                      marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
                     }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 500, fontSize: 14 }}>{inq?.Apellido || 'Inquilino'}</div>
@@ -744,10 +797,10 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
                       </div>
                       <button
                         className="btn btn-secondary"
-                        style={{ padding: '6px 12px', fontSize: 13, flexShrink: 0 }}
-                        onClick={() => editarContrato(c.IdContrato, { activo: true, archivado: false })}
+                        style={{ padding: '6px 14px', fontSize: 13, flexShrink: 0 }}
+                        onClick={() => setVerContrato(c)}
                       >
-                        Reactivar
+                        Ver
                       </button>
                     </div>
                   )
@@ -772,6 +825,15 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
           propiedad={propiedad}
           onCerrar={() => setEditandoProp(false)}
           onGuardar={datos => { editarPropiedad(propiedad.IdPropiedad, datos); setEditandoProp(false) }}
+        />
+      )}
+
+      {verContrato && (
+        <VerContratoModal
+          contrato={verContrato}
+          inquilino={getInquilino(verContrato.IdInquilino)}
+          onCerrar={() => setVerContrato(null)}
+          onReactivar={() => { editarContrato(verContrato.IdContrato, { activo: true, archivado: false }); setVerContrato(null) }}
         />
       )}
 
