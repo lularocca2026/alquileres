@@ -223,6 +223,10 @@ export default function Dashboard({ onAbrirPropiedad, onImportar, onArchivos, on
             onArchivos={apellido => onArchivos(apellido)}
           />
         ))}
+
+        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text3)', padding: '16px 0 8px' }}>
+          versión {__BUILD_TIME__}
+        </div>
       </div>
     </div>
   )
