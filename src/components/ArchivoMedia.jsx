@@ -197,21 +197,22 @@ function VistaArchivos({ carpeta, onVolver }) {
 
   async function borrarTodos() {
     if (!window.confirm(`¿Borrar TODOS los archivos de "${titulo}"? Borra todo el chat importado y no se puede deshacer.`)) return
-    let todos = []
-    let off = 0
-    while (true) {
-      const { data } = await supabase.storage.from(BUCKET).list(carpeta, { limit: 1000, offset: off })
-      if (!data || data.length === 0) break
-      todos.push(...data)
-      if (data.length < 1000) break
-      off += 1000
+    // Repetir listar + borrar en lotes hasta vaciar la carpeta (remove tiene límite de lote)
+    for (let ronda = 0; ronda < 40; ronda++) {
+      const { data, error: errList } = await supabase.storage.from(BUCKET).list(carpeta, { limit: 1000 })
+      if (errList) { alert('No se pudo listar: ' + errList.message); return }
+      const paths = (data || []).filter(f => f.name).map(f => `${carpeta}/${f.name}`)
+      if (paths.length === 0) { onVolver(); return } // ya está vacía
+      for (let i = 0; i < paths.length; i += 100) {
+        const { error } = await supabase.storage.from(BUCKET).remove(paths.slice(i, i + 100))
+        if (error) { alert('No se pudo borrar: ' + error.message); return }
+      }
     }
-    const paths = todos.filter(f => f.name).map(f => `${carpeta}/${f.name}`)
-    if (paths.length) {
-      const { error } = await supabase.storage.from(BUCKET).remove(paths)
-      if (error) { alert('No se pudo borrar: ' + error.message); return }
-    }
-    onVolver()
+    // Si tras 40 rondas todavía quedan, avisar
+    const { data } = await supabase.storage.from(BUCKET).list(carpeta, { limit: 1000 })
+    const quedan = (data || []).filter(f => f.name).length
+    if (quedan > 0) alert(`Quedaron ${quedan} archivos sin borrar. Volvé a intentar.`)
+    else onVolver()
   }
 
   return (
