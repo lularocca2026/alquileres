@@ -38,7 +38,7 @@ function getServicioUrl(label, valor, ciudad) {
 
 // ─── Tab Pagos ───────────────────────────────────────────────────────────────
 
-function FilaPago({ pago, contratoMonto, onClick }) {
+function FilaPago({ pago, contratoMonto, onClick, onEliminar }) {
   const esperado = pago.MontoEsperado ?? contratoMonto ?? 0
   const cobrado = pago.Monto ?? 0
   const expExtr = pago['exp extraordinarias'] ?? 0
@@ -60,9 +60,20 @@ function FilaPago({ pago, contratoMonto, onClick }) {
         <div style={{ fontWeight: 600, fontSize: 15 }}>
           {pago.Periodo ? formatMes(pago.Periodo) : '—'}
         </div>
-        <span className={`badge ${pago.Pagado ? 'badge-green' : 'badge-red'}`}>
-          {pago.Pagado ? '✓ Cobrado' : 'Pendiente'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className={`badge ${pago.Pagado ? 'badge-green' : 'badge-red'}`}>
+            {pago.Pagado ? '✓ Cobrado' : 'Pendiente'}
+          </span>
+          {onEliminar && (
+            <button
+              onClick={e => { e.stopPropagation(); if (window.confirm('¿Borrar este pago?')) onEliminar() }}
+              title="Borrar pago"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, padding: 2, lineHeight: 1, opacity: 0.65 }}
+            >
+              🗑
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Grilla: esperado / cobrado */}
@@ -150,6 +161,7 @@ function TabPagos({ contrato }) {
           pago={p}
           contratoMonto={contrato.MontoInicial}
           onClick={() => setModal(p)}
+          onEliminar={() => eliminarPago(p.idpago)}
         />
       ))}
 
@@ -304,7 +316,7 @@ function PanelActualizacionMonto({ contrato }) {
   )
 }
 
-function HistorialICL({ historial }) {
+function HistorialICL({ historial, onEliminar }) {
   if (!historial?.length) return null
 
   return (
@@ -312,31 +324,45 @@ function HistorialICL({ historial }) {
       <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
         Historial de actualizaciones
       </div>
-      {[...historial].reverse().map((h, i) => (
-        <div key={i} style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 0', borderBottom: '1px solid var(--border)',
-        }}>
-          <div>
-            <div style={{ fontSize: 14 }}>
-              {formatPesos(h.montoAnterior)} → <strong>{formatPesos(h.montoNuevo)}</strong>
+      {[...historial].reverse().map((h, i) => {
+        const idxOriginal = historial.length - 1 - i
+        return (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 10,
+          }}>
+            <div>
+              <div style={{ fontSize: 14 }}>
+                {formatPesos(h.montoAnterior)} → <strong>{formatPesos(h.montoNuevo)}</strong>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
+                {formatFecha(h.fecha)}
+                {h.tipo && h.tipo !== 'ICL' && (
+                  <span style={{ marginLeft: 6, color: 'var(--text3)' }}>· {h.tipo}</span>
+                )}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
-              {formatFecha(h.fecha)}
-              {h.tipo && h.tipo !== 'ICL' && (
-                <span style={{ marginLeft: 6, color: 'var(--text3)' }}>· {h.tipo}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                fontSize: 13, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
+                background: h.porcentaje >= 0 ? '#dcfce7' : '#fee2e2',
+                color: h.porcentaje >= 0 ? 'var(--green)' : 'var(--red)',
+              }}>
+                {h.porcentaje >= 0 ? '+' : ''}{h.porcentaje}%
+              </span>
+              {onEliminar && (
+                <button
+                  onClick={() => { if (window.confirm('¿Borrar esta actualización del historial?')) onEliminar(idxOriginal) }}
+                  title="Borrar actualización"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, padding: 2, lineHeight: 1, opacity: 0.65 }}
+                >
+                  🗑
+                </button>
               )}
             </div>
           </div>
-          <span style={{
-            fontSize: 13, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
-            background: h.porcentaje >= 0 ? '#dcfce7' : '#fee2e2',
-            color: h.porcentaje >= 0 ? 'var(--green)' : 'var(--red)',
-          }}>
-            {h.porcentaje >= 0 ? '+' : ''}{h.porcentaje}%
-          </span>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -503,7 +529,14 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
 
       {/* Actualizar monto + historial */}
       <PanelActualizacionMonto contrato={contrato} />
-      <HistorialICL historial={contrato.historialICL} />
+      <HistorialICL
+        historial={contrato.historialICL}
+        onEliminar={idx => {
+          const nuevo = (contrato.historialICL || []).filter((_, j) => j !== idx)
+          const ultima = nuevo.length ? nuevo[nuevo.length - 1].fecha : null
+          editarContrato(contrato.IdContrato, { historialICL: nuevo, fechaUltimoAumento: ultima })
+        }}
+      />
 
 
       {editando && (

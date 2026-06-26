@@ -188,6 +188,32 @@ function VistaArchivos({ carpeta, onVolver }) {
   const titulo = carpeta.replace(/^Chat de WhatsApp con /i, '').replace(/^Inq\s+/i, '')
   const lista = registros
 
+  async function borrarArchivo(path) {
+    if (!window.confirm('¿Borrar este archivo de la nube? No se puede deshacer.')) return
+    const { error } = await supabase.storage.from(BUCKET).remove([path])
+    if (error) { alert('No se pudo borrar: ' + error.message); return }
+    setRegistros(rs => rs.filter(r => r.path !== path))
+  }
+
+  async function borrarTodos() {
+    if (!window.confirm(`¿Borrar TODOS los archivos de "${titulo}"? Borra todo el chat importado y no se puede deshacer.`)) return
+    let todos = []
+    let off = 0
+    while (true) {
+      const { data } = await supabase.storage.from(BUCKET).list(carpeta, { limit: 1000, offset: off })
+      if (!data || data.length === 0) break
+      todos.push(...data)
+      if (data.length < 1000) break
+      off += 1000
+    }
+    const paths = todos.filter(f => f.name).map(f => `${carpeta}/${f.name}`)
+    if (paths.length) {
+      const { error } = await supabase.storage.from(BUCKET).remove(paths)
+      if (error) { alert('No se pudo borrar: ' + error.message); return }
+    }
+    onVolver()
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <div className="header">
@@ -195,6 +221,15 @@ function VistaArchivos({ carpeta, onVolver }) {
         <h1 style={{ fontSize: 15 }}>{titulo}</h1>
         {!cargando && <span style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }}>{lista.length}</span>}
       </div>
+
+      {!cargando && registros.some(r => r.path) && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 14px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
+          <button onClick={borrarTodos}
+            style={{ fontSize: 12, fontWeight: 600, color: 'var(--red)', background: 'none', border: '1px solid var(--red)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer' }}>
+            🗑 Borrar todos los archivos
+          </button>
+        </div>
+      )}
 
       <div style={{ flex: 1 }}>
         {cargando && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Cargando...</div>}
@@ -209,7 +244,7 @@ function VistaArchivos({ carpeta, onVolver }) {
               <col style={{ width: 50 }} />{/* Tipo */}
               <col style={{ width: 56 }} />{/* Autor */}
               <col />{/* Mensaje / Archivo (resto) */}
-              <col style={{ width: 40 }} />{/* Ver */}
+              <col style={{ width: 50 }} />{/* Ver / borrar */}
             </colgroup>
             <thead>
               <tr style={{ background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 1 }}>
@@ -247,7 +282,13 @@ function VistaArchivos({ carpeta, onVolver }) {
                   </td>
                   <td style={{ padding: '7px 4px', textAlign: 'center', verticalAlign: 'top' }}>
                     {r.path
-                      ? <BtnVer path={r.path} />
+                      ? <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
+                          <BtnVer path={r.path} />
+                          <button onClick={() => borrarArchivo(r.path)} title="Borrar archivo"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1, opacity: 0.7 }}>
+                            🗑
+                          </button>
+                        </div>
                       : r.esArchivo
                         ? <span style={{ fontSize: 10, color: 'var(--text3)' }}>—</span>
                         : null}
