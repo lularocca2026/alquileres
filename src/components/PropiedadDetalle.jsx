@@ -8,6 +8,16 @@ import NuevoContratoModal from './NuevoContratoModal.jsx'
 import Modal, { Campo, Input, Textarea } from './Modal.jsx'
 import { ARQUILER_URL, registrarActualizacion } from './ActualizacionICL.jsx'
 
+// Servicios de la propiedad: label visible ↔ campo real en el objeto propiedad
+const SERVICIOS_FIELDS = [
+  ['Aguas', 'aguas CTA'],
+  ['EDERSA / Edenor', 'NIS edersa'],
+  ['Camuzzi', 'camuzzi CTA'],
+  ['Municipal', 'Partida municipal'],
+  ['Rentas pvcia', 'Partida Rentas pvcia'],
+  ['Catastro', 'nomenclatura catastral'],
+]
+
 // URLs de las oficinas virtuales de cada servicio (verificadas)
 function getServicioUrl(label, valor, ciudad) {
   const esCaba = ciudad?.toLowerCase().includes('caba')
@@ -367,9 +377,29 @@ function HistorialICL({ historial, onEliminar }) {
   )
 }
 
+function EditarServiciosModal({ propiedad, onGuardar, onCerrar }) {
+  const [form, setForm] = useState(() => {
+    const inicial = {}
+    SERVICIOS_FIELDS.forEach(([, campo]) => { inicial[campo] = propiedad[campo] ?? '' })
+    return inicial
+  })
+  function set(campo, v) { setForm(f => ({ ...f, [campo]: v })) }
+
+  return (
+    <Modal titulo="Cuentas de servicios" onCerrar={onCerrar} onGuardar={() => onGuardar(form)}>
+      {SERVICIOS_FIELDS.map(([label, campo]) => (
+        <Campo key={campo} label={label}>
+          <Input value={form[campo]} onChange={v => set(campo, v)} placeholder="Sin cargar" />
+        </Campo>
+      ))}
+    </Modal>
+  )
+}
+
 function TabContrato({ contrato, propiedad, onNuevoContrato }) {
-  const { editarContrato, inquilinos, agregarInquilino } = useData()
+  const { editarContrato, editarPropiedad, inquilinos, agregarInquilino } = useData()
   const [editando, setEditando] = useState(false)
+  const [editandoServicios, setEditandoServicios] = useState(false)
   const [nuevoContrato, setNuevoContrato] = useState(false)
   const [confirmArchivar, setConfirmArchivar] = useState(false)
   const dias = diasParaVencer(contrato.FechaFin)
@@ -479,17 +509,22 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
 
       {/* Servicios */}
       <div style={{ marginTop: 20, marginBottom: 8 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
-          Cuentas de servicios
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Cuentas de servicios
+          </div>
+          <button
+            className="btn btn-secondary"
+            onClick={() => setEditandoServicios(true)}
+            style={{ padding: '6px 12px', fontSize: 13 }}
+          >
+            ✏ Editar servicios
+          </button>
         </div>
-        {[
-          ['Aguas', propiedad['aguas CTA']],
-          ['EDERSA / Edenor', propiedad['NIS edersa']],
-          ['Camuzzi', propiedad['camuzzi CTA']],
-          ['Municipal', propiedad['Partida municipal']],
-          ['Rentas pvcia', propiedad['Partida Rentas pvcia']],
-          ['Catastro', propiedad['nomenclatura catastral']],
-        ].filter(([, v]) => v).map(([label, val]) => {
+        {SERVICIOS_FIELDS.filter(([, campo]) => propiedad[campo]).length === 0 && (
+          <div style={{ fontSize: 13, color: 'var(--text3)' }}>Sin cuentas cargadas</div>
+        )}
+        {SERVICIOS_FIELDS.map(([label, campo]) => [label, propiedad[campo]]).filter(([, v]) => v).map(([label, val]) => {
           const url = getServicioUrl(label, val, propiedad.Ciudad)
           return (
             <div key={label} className="item-row" style={{ alignItems: 'center' }}>
@@ -574,6 +609,14 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
           onCerrar={() => setNuevoContrato(false)}
           onGuardar={datos => { onNuevoContrato(datos); setNuevoContrato(false) }}
           onAgregarInquilino={agregarInquilino}
+        />
+      )}
+
+      {editandoServicios && (
+        <EditarServiciosModal
+          propiedad={propiedad}
+          onCerrar={() => setEditandoServicios(false)}
+          onGuardar={datos => { editarPropiedad(propiedad.IdPropiedad, datos); setEditandoServicios(false) }}
         />
       )}
     </div>
