@@ -46,3 +46,9 @@ export function isoToDate(iso) {
   if (!iso) return ''
   return iso.split('T')[0]
 }
+
+// "2026-10" a partir de un ISO o de un "YYYY-MM-DD" (para comparar meses sin líos de zona horaria)
+export function mesKey(iso) {
+  if (!iso) return ''
+  return isoToDate(iso).slice(0, 7)
+}
