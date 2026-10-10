@@ -177,8 +177,11 @@ function TabPagos({ contrato }) {
 
       {modal && (
         <EditarPagoModal
+          key={modal === 'nuevo' ? 'nuevo' : modal.idpago}
           pago={modal === 'nuevo' ? null : modal}
           contratoMonto={contrato.MontoInicial}
+          pagosExistentes={pagos}
+          onIrAPago={p => setModal(p)}
           onCerrar={() => setModal(null)}
           onGuardar={datos => {
             if (modal === 'nuevo') agregarPago({ ...datos, IdContrato: contrato.IdContrato })

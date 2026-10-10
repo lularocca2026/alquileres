@@ -2,7 +2,7 @@
 import JSZip from 'jszip'
 import { supabase } from '../supabase.js'
 import { useData } from '../DataContext.jsx'
-import { formatPesos, formatFecha } from '../utils.js'
+import { formatPesos, formatFecha, formatMes, mesKey } from '../utils.js'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -167,7 +167,7 @@ function AlbumFotos({ fotos }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function ImportarZip({ onVolver, onArchivos }) {
-  const { agregarPago, agregarMantenimiento, editarContrato, contratos } = useData()
+  const { agregarPago, agregarMantenimiento, editarContrato, contratos, pagos } = useData()
   const [fase, setFase] = useState('instrucciones')
   const [resultado, setResultado] = useState(null)
   const [error, setError] = useState(null)
@@ -285,8 +285,19 @@ export default function ImportarZip({ onVolver, onArchivos }) {
     const { analisis } = resultado
     const contratoActivo = contratos.find(c => c.activo && c.IdPropiedad > 0)
 
+    // Un solo pago por mes: si el mes ya está cargado, se saltea
+    const mesesCargados = new Set(
+      pagos.filter(p => p.IdContrato === contratoActivo?.IdContrato).map(p => mesKey(p.Periodo))
+    )
+    const salteados = []
     analisis?.pagos?.forEach((p, i) => {
       if (!isSeleccionado('pago', i)) return
+      const mes = mesKey(p.fecha)
+      if (mes && mesesCargados.has(mes)) {
+        salteados.push(`${formatMes(p.fecha)}: ${p.descripcion ?? ''} (${p.monto ?? ''})`)
+        return
+      }
+      if (mes) mesesCargados.add(mes)
       agregarPago({
         IdContrato: contratoActivo?.IdContrato ?? 0,
         Periodo: p.fecha,
@@ -320,6 +331,10 @@ export default function ImportarZip({ onVolver, onArchivos }) {
       editarContrato(contratoActivo.IdContrato, {
         notas: notasActuales ? `${notasActuales}\n\n--- WhatsApp ---\n${nuevasNotas}` : `--- WhatsApp ---\n${nuevasNotas}`,
       })
+    }
+
+    if (salteados.length) {
+      alert(`Estos pagos NO se importaron porque ya hay un pago cargado en ese mes:\n\n${salteados.join('\n')}\n\nSi pagó dos veces, agregalo en el pago anterior.`)
     }
 
     setConfirmados(true)

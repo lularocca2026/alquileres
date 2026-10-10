@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import Modal, { Campo, Input, Textarea, Toggle } from './Modal.jsx'
-import { isoToDate, isoHoy } from '../utils.js'
+import { isoToDate, isoHoy, mesKey, formatMes, formatPesos } from '../utils.js'
 
-export default function EditarPagoModal({ pago, contratoMonto, onGuardar, onCerrar, onEliminar }) {
+export default function EditarPagoModal({ pago, contratoMonto, pagosExistentes = [], onGuardar, onCerrar, onEliminar, onIrAPago }) {
   const esNuevo = !pago
 
   const [form, setForm] = useState({
@@ -19,7 +19,18 @@ export default function EditarPagoModal({ pago, contratoMonto, onGuardar, onCerr
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
+  // Otro pago del mismo contrato ya cargado para ese mes (sin contar el que se está editando)
+  const pagoMismoMes = form.Periodo
+    ? pagosExistentes.find(p => p.idpago !== pago?.idpago && mesKey(p.Periodo) === mesKey(form.Periodo))
+    : null
+  // Día 15 del mes para que la zona horaria no lo corra al mes anterior
+  const mesDuplicado = pagoMismoMes ? formatMes(`${mesKey(pagoMismoMes.Periodo)}-15`) : ''
+
   function guardar() {
+    if (pagoMismoMes) {
+      alert(`Ya hay un pago cargado para ${mesDuplicado}.\n\nSi pagó dos veces, agregalo en el pago anterior.`)
+      return
+    }
     onGuardar({
       ...pago,
       Periodo: form.Periodo ? new Date(form.Periodo).toISOString() : null,
@@ -43,6 +54,21 @@ export default function EditarPagoModal({ pago, contratoMonto, onGuardar, onCerr
       <Campo label="Período (mes de alquiler)">
         <Input type="date" value={form.Periodo} onChange={v => set('Periodo', v)} />
       </Campo>
+
+      {pagoMismoMes && (
+        <div style={{ background: '#fee2e2', border: '1px solid var(--red)', borderRadius: 8, padding: 12, fontSize: 13, color: '#991b1b', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontWeight: 600 }}>⚠️ Ya hay un pago cargado para {mesDuplicado}</div>
+          <div>
+            No se puede cargar dos pagos en el mismo mes ({formatPesos(pagoMismoMes.Monto)} cobrado).
+            Si pagó dos veces, agregalo en el pago anterior: editalo y sumá el monto o anotalo en observaciones.
+          </div>
+          {onIrAPago && (
+            <button className="btn btn-secondary" style={{ padding: '8px 12px', fontSize: 13 }} onClick={() => onIrAPago(pagoMismoMes)}>
+              Abrir el pago de {mesDuplicado}
+            </button>
+          )}
+        </div>
+      )}
 
       <Campo label="Fecha de pago">
         <Input type="date" value={form.FechaPago} onChange={v => set('FechaPago', v)} />
