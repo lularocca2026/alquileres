@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Modal, { Campo, Input, Textarea } from './Modal.jsx'
 import { isoHoy } from '../utils.js'
 
-export default function NuevoContratoModal({ idPropiedad, inquilinos, onGuardar, onCerrar, onAgregarInquilino }) {
+export default function NuevoContratoModal({ idPropiedad, inquilinos, hayContratoActivo, onGuardar, onCerrar, onAgregarInquilino }) {
   const [form, setForm] = useState({
     IdInquilino: '',
     FechaInicio: isoHoy(),
@@ -28,6 +28,10 @@ export default function NuevoContratoModal({ idPropiedad, inquilinos, onGuardar,
   }
 
   function guardar() {
+    // Sin inquilino el contrato quedaría activo pero invisible en la app
+    if (!parseInt(form.IdInquilino)) { alert('Elegí el inquilino (o agregalo con "+ Agregar nuevo inquilino").'); return }
+    if (!(parseFloat(form.MontoInicial) > 0)) { alert('Completá el monto mensual.'); return }
+    if (!form.FechaFin) { alert('Completá la fecha de vencimiento.'); return }
     onGuardar({
       IdPropiedad: idPropiedad,
       IdInquilino: parseInt(form.IdInquilino),
@@ -46,6 +50,11 @@ export default function NuevoContratoModal({ idPropiedad, inquilinos, onGuardar,
 
   return (
     <Modal titulo="Nuevo contrato" onCerrar={onCerrar} onGuardar={guardar} guardarLabel="Crear contrato">
+      {hayContratoActivo && (
+        <div className="alert alert-orange" style={{ fontSize: 13 }}>
+          El contrato actual pasa a "Contratos anteriores" (no se borra, y sus pagos quedan guardados).
+        </div>
+      )}
       <Campo label="Inquilino">
         <select
           value={form.IdInquilino}

@@ -870,6 +870,20 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
           </div>
         )}
 
+        {contrato && (
+          <button
+            onClick={() => setNuevoContrato(true)}
+            style={{
+              width: '100%', padding: '11px 18px', marginBottom: 12, fontSize: 15, fontWeight: 700, color: 'white',
+              border: 'none', borderRadius: 10, cursor: 'pointer',
+              background: 'linear-gradient(180deg, var(--blue2), var(--blue1))',
+              boxShadow: '0 3px 8px rgba(37,99,235,0.40), 0 1px 2px rgba(0,0,0,0.12)',
+            }}
+          >
+            + Nuevo contrato
+          </button>
+        )}
+
         <div className="tabs">
           {tabs.map(t => (
             <button key={t.id} className={`tab ${tabEfectivo === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
@@ -964,6 +978,7 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
         <NuevoContratoModal
           idPropiedad={idPropiedad}
           inquilinos={inquilinos}
+          hayContratoActivo={!!contrato}
           onCerrar={() => setNuevoContrato(false)}
           onGuardar={datos => { agregarContrato(datos); setNuevoContrato(false) }}
           onAgregarInquilino={agregarInquilino}
