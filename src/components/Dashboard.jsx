@@ -3,6 +3,45 @@ import { useData } from '../DataContext.jsx'
 import { supabase } from '../supabase.js'
 import { formatPesos, diasParaVencer, formatFecha } from '../utils.js'
 import { BannerICL, AlertasICLModal, estadoICL } from './ActualizacionICL.jsx'
+import Modal, { Campo, Input } from './Modal.jsx'
+
+function NuevaPropiedadModal({ onGuardar, onCerrar }) {
+  const [form, setForm] = useState({ Direccion: '', Tipo: '', Ciudad: '' })
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+
+  function guardar() {
+    if (!form.Direccion.trim()) { alert('Completá la dirección o nombre de la propiedad.'); return }
+    onGuardar({
+      Direccion: form.Direccion.trim(),
+      Tipo: form.Tipo.trim(),
+      Ciudad: form.Ciudad.trim(),
+      PrecioReferencia: 0,
+      'aguas CTA': null,
+      'NIS edersa': null,
+      'camuzzi CTA': null,
+      'Partida municipal': null,
+      'Partida Rentas pvcia': null,
+      'nomenclatura catastral': null,
+    })
+  }
+
+  return (
+    <Modal titulo="Nueva propiedad" onCerrar={onCerrar} onGuardar={guardar} guardarLabel="Crear propiedad">
+      <Campo label="Dirección / Nombre *">
+        <Input value={form.Direccion} onChange={v => set('Direccion', v)} placeholder="Ej: Salta 685 2A" />
+      </Campo>
+      <Campo label="Tipo">
+        <Input value={form.Tipo} onChange={v => set('Tipo', v)} placeholder="Ej: Departamento" />
+      </Campo>
+      <Campo label="Ciudad">
+        <Input value={form.Ciudad} onChange={v => set('Ciudad', v)} placeholder="Ej: Cipolletti" />
+      </Campo>
+      <div style={{ fontSize: 13, color: 'var(--text3)' }}>
+        Después de crearla se abre la propiedad para cargarle el contrato.
+      </div>
+    </Modal>
+  )
+}
 
 function estadoPago(pagos, contrato) {
   if (!contrato) return null
@@ -172,8 +211,9 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
 }
 
 export default function Dashboard({ onAbrirPropiedad, onImportar, onArchivos, onInquilinos }) {
-  const { propiedades, exportarJSON, sincronizado } = useData()
+  const { propiedades, exportarJSON, sincronizado, agregarPropiedad } = useData()
   const [mostrarICL, setMostrarICL] = useState(false)
+  const [nuevaProp, setNuevaProp] = useState(false)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
@@ -211,9 +251,33 @@ export default function Dashboard({ onAbrirPropiedad, onImportar, onArchivos, on
         <BannerICL onClick={() => setMostrarICL(true)} />
         {mostrarICL && <AlertasICLModal onCerrarTodo={() => setMostrarICL(false)} />}
 
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 }}>
-          Propiedades
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Propiedades
+          </div>
+          <button
+            onClick={() => setNuevaProp(true)}
+            style={{
+              padding: '8px 14px', fontSize: 14, fontWeight: 700, color: 'white',
+              border: 'none', borderRadius: 10, cursor: 'pointer',
+              background: 'linear-gradient(180deg, var(--blue2), var(--blue1))',
+              boxShadow: '0 3px 8px rgba(37,99,235,0.40), 0 1px 2px rgba(0,0,0,0.12)',
+            }}
+          >
+            + Nueva propiedad
+          </button>
         </div>
+
+        {nuevaProp && (
+          <NuevaPropiedadModal
+            onCerrar={() => setNuevaProp(false)}
+            onGuardar={datos => {
+              const id = agregarPropiedad(datos)
+              setNuevaProp(false)
+              onAbrirPropiedad(id)
+            }}
+          />
+        )}
 
         {propiedades.map(p => (
           <PropiedadCard
