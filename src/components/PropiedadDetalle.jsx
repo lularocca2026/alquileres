@@ -5,7 +5,7 @@ import EditarPagoModal from './EditarPagoModal.jsx'
 import EditarContratoModal from './EditarContratoModal.jsx'
 import EditarMantModal from './EditarMantModal.jsx'
 import NuevoContratoModal from './NuevoContratoModal.jsx'
-import Modal, { Campo, Input, Textarea } from './Modal.jsx'
+import Modal, { Campo, Input, Textarea, SelectorAlquiladaPorMi } from './Modal.jsx'
 import { ARQUILER_URL, registrarActualizacion } from './ActualizacionICL.jsx'
 
 // Servicios de la propiedad: label visible ↔ campo real en el objeto propiedad
@@ -48,7 +48,7 @@ function getServicioUrl(label, valor, ciudad) {
 
 // ─── Tab Pagos ───────────────────────────────────────────────────────────────
 
-function FilaPago({ pago, contratoMonto, onClick, onEliminar }) {
+function FilaPago({ pago, contratoMonto, onClick, onEliminar, alquilada }) {
   const esperado = pago.MontoEsperado ?? contratoMonto ?? 0
   const cobrado = pago.Monto ?? 0
   const expExtr = pago['exp extraordinarias'] ?? 0
@@ -72,7 +72,7 @@ function FilaPago({ pago, contratoMonto, onClick, onEliminar }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className={`badge ${pago.Pagado ? 'badge-green' : 'badge-red'}`}>
-            {pago.Pagado ? '✓ Cobrado' : 'Pendiente'}
+            {pago.Pagado ? (alquilada ? '✓ Pagado' : '✓ Cobrado') : (alquilada ? 'A pagar' : 'Pendiente')}
           </span>
           {onEliminar && (
             <button
@@ -96,7 +96,7 @@ function FilaPago({ pago, contratoMonto, onClick, onEliminar }) {
           background: diferencia < -1000 ? '#fee2e2' : diferencia > 1000 ? '#dcfce7' : 'var(--bg)',
           borderRadius: 8, padding: '8px 10px',
         }}>
-          <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 }}>Cobrado</div>
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2 }}>{alquilada ? 'Pagado' : 'Cobrado'}</div>
           <div style={{ fontSize: 14, fontWeight: 600, color: diferencia < -1000 ? 'var(--red)' : diferencia > 1000 ? 'var(--green)' : 'var(--text)' }}>
             {formatPesos(cobrado)}
           </div>
@@ -138,7 +138,7 @@ function FilaPago({ pago, contratoMonto, onClick, onEliminar }) {
   )
 }
 
-function TabPagos({ contrato }) {
+function TabPagos({ contrato, alquilada }) {
   const { getPagosContrato, editarPago, agregarPago, eliminarPago } = useData()
   const [modal, setModal] = useState(null) // null | {pago} | 'nuevo'
 
@@ -170,6 +170,7 @@ function TabPagos({ contrato }) {
           key={p.idpago}
           pago={p}
           contratoMonto={contrato.MontoInicial}
+          alquilada={alquilada}
           onClick={() => setModal(p)}
           onEliminar={() => eliminarPago(p.idpago)}
         />
@@ -180,6 +181,7 @@ function TabPagos({ contrato }) {
           key={modal === 'nuevo' ? 'nuevo' : modal.idpago}
           pago={modal === 'nuevo' ? null : modal}
           contratoMonto={contrato.MontoInicial}
+          alquilada={alquilada}
           pagosExistentes={pagos}
           onIrAPago={p => setModal(p)}
           onCerrar={() => setModal(null)}
@@ -609,6 +611,8 @@ function TabContrato({ contrato, propiedad, onNuevoContrato }) {
         <NuevoContratoModal
           idPropiedad={propiedad.IdPropiedad}
           inquilinos={inquilinos}
+          hayContratoActivo
+          alquilada={!!propiedad.alquiladaPorMi}
           onCerrar={() => setNuevoContrato(false)}
           onGuardar={datos => { onNuevoContrato(datos); setNuevoContrato(false) }}
           onAgregarInquilino={agregarInquilino}
@@ -782,6 +786,9 @@ function EditarPropiedadModal({ propiedad, onGuardar, onCerrar }) {
       <Campo label="Ciudad">
         <Input value={form.Ciudad || ''} onChange={v => set('Ciudad', v)} placeholder="Ej: Cipolletti" />
       </Campo>
+      <Campo label="¿Cobrás o pagás el alquiler?">
+        <SelectorAlquiladaPorMi value={form.alquiladaPorMi} onChange={v => set('alquiladaPorMi', v)} />
+      </Campo>
     </Modal>
   )
 }
@@ -798,6 +805,7 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
 
   const propiedad = getPropiedad(idPropiedad)
   if (!propiedad) return null
+  const alquilada = !!propiedad.alquiladaPorMi // Lucre es la inquilina: paga en vez de cobrar
 
   const contrato = getContratoActivo(idPropiedad)
   const todosLosContratos = getContratosPropiedad(idPropiedad)
@@ -820,6 +828,7 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
           <h1 style={{ fontSize: 16 }}>{propiedad.Direccion}</h1>
           <div style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 400 }}>
             {propiedad.Tipo} · {propiedad.Ciudad}
+            {alquilada && ' · 🔑 La alquilo yo'}
           </div>
         </div>
         <button onClick={() => setEditandoProp(true)}
@@ -841,6 +850,7 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
                 {inquilino.Apellido?.charAt(0)}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
+                {alquilada && <div style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Propietario</div>}
                 <div style={{ fontWeight: 600 }}>{inquilino.Apellido}</div>
                 <div style={{ fontSize: 13, color: 'var(--text2)' }}>{inquilino.Celular}</div>
                 {inquilino.Email && (
@@ -852,8 +862,8 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                 {contrato && (
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 15 }}>{formatPesos(contrato.MontoInicial)}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)' }}>por mes</div>
+                    <div style={{ fontWeight: 700, color: alquilada ? 'var(--red)' : 'var(--accent)', fontSize: 15 }}>{formatPesos(contrato.MontoInicial)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)' }}>{alquilada ? 'pago por mes' : 'por mes'}</div>
                   </div>
                 )}
                 <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: 12 }} onClick={() => setEditandoInq(true)}>
@@ -894,7 +904,7 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
 
         <div className="card">
           <div className="card-body" style={{ paddingTop: 16 }}>
-            {tabEfectivo === 'pagos' && contrato && <TabPagos contrato={contrato} />}
+            {tabEfectivo === 'pagos' && contrato && <TabPagos contrato={contrato} alquilada={alquilada} />}
             {tabEfectivo === 'contrato' && contrato && <TabContrato contrato={contrato} propiedad={propiedad} onNuevoContrato={agregarContrato} />}
             {tabEfectivo === 'contrato' && !contrato && (
               <div>
@@ -979,6 +989,7 @@ export default function PropiedadDetalle({ idPropiedad, onVolver, onArchivos }) 
           idPropiedad={idPropiedad}
           inquilinos={inquilinos}
           hayContratoActivo={!!contrato}
+          alquilada={alquilada}
           onCerrar={() => setNuevoContrato(false)}
           onGuardar={datos => { agregarContrato(datos); setNuevoContrato(false) }}
           onAgregarInquilino={agregarInquilino}

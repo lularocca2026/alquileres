@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Modal, { Campo, Input, Textarea, Toggle } from './Modal.jsx'
 import { isoToDate, isoHoy, mesKey, formatMes, formatPesos } from '../utils.js'
 
-export default function EditarPagoModal({ pago, contratoMonto, pagosExistentes = [], onGuardar, onCerrar, onEliminar, onIrAPago }) {
+export default function EditarPagoModal({ pago, contratoMonto, alquilada, pagosExistentes = [], onGuardar, onCerrar, onEliminar, onIrAPago }) {
   const esNuevo = !pago
 
   const [form, setForm] = useState({
@@ -59,7 +59,7 @@ export default function EditarPagoModal({ pago, contratoMonto, pagosExistentes =
         <div style={{ background: '#fee2e2', border: '1px solid var(--red)', borderRadius: 8, padding: 12, fontSize: 13, color: '#991b1b', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontWeight: 600 }}>⚠️ Ya hay un pago cargado para {mesDuplicado}</div>
           <div>
-            No se puede cargar dos pagos en el mismo mes ({formatPesos(pagoMismoMes.Monto)} cobrado).
+            No se puede cargar dos pagos en el mismo mes ({formatPesos(pagoMismoMes.Monto)} {alquilada ? 'pagado' : 'cobrado'}).
             Si pagó dos veces, agregalo en el pago anterior: editalo y sumá el monto o anotalo en observaciones.
           </div>
           {onIrAPago && (
@@ -78,7 +78,7 @@ export default function EditarPagoModal({ pago, contratoMonto, pagosExistentes =
         <Campo label="Alquiler esperado ($)">
           <Input type="number" value={form.MontoEsperado} onChange={v => set('MontoEsperado', v)} />
         </Campo>
-        <Campo label="Monto cobrado ($)">
+        <Campo label={alquilada ? 'Monto pagado ($)' : 'Monto cobrado ($)'}>
           <Input type="number" value={form.Monto} onChange={v => set('Monto', v)} />
         </Campo>
       </div>
@@ -96,7 +96,7 @@ export default function EditarPagoModal({ pago, contratoMonto, pagosExistentes =
         </Campo>
       </div>
 
-      <Toggle value={form.Pagado} onChange={v => set('Pagado', v)} label="Cobrado" />
+      <Toggle value={form.Pagado} onChange={v => set('Pagado', v)} label={alquilada ? 'Pagado' : 'Cobrado'} />
 
       <Campo label="Observaciones">
         <Textarea value={form.observaciones} onChange={v => set('observaciones', v)} placeholder="Notas adicionales..." />

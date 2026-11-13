@@ -141,3 +141,31 @@ export function Toggle({ value, onChange, label }) {
     </label>
   )
 }
+
+// Elige si la propiedad es de Lucre (cobra alquiler) o si ella la alquila (paga alquiler)
+export function SelectorAlquiladaPorMi({ value, onChange }) {
+  const opciones = [
+    { v: false, label: '🏠 Es mía', sub: 'Cobro alquiler' },
+    { v: true, label: '🔑 La alquilo yo', sub: 'Pago alquiler' },
+  ]
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      {opciones.map(o => (
+        <button
+          key={String(o.v)}
+          type="button"
+          onClick={() => onChange(o.v)}
+          style={{
+            flex: 1, padding: '10px 8px', borderRadius: 8, cursor: 'pointer',
+            border: `2px solid ${!!value === o.v ? 'var(--accent)' : 'var(--border)'}`,
+            background: !!value === o.v ? '#dbeafe' : 'var(--surface)',
+            color: !!value === o.v ? 'var(--accent)' : 'var(--text2)',
+          }}
+        >
+          <div style={{ fontSize: 14, fontWeight: 700 }}>{o.label}</div>
+          <div style={{ fontSize: 12, marginTop: 2 }}>{o.sub}</div>
+        </button>
+      ))}
+    </div>
+  )
+}

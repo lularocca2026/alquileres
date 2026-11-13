@@ -3,10 +3,10 @@ import { useData } from '../DataContext.jsx'
 import { supabase } from '../supabase.js'
 import { formatPesos, diasParaVencer, formatFecha } from '../utils.js'
 import { BannerICL, AlertasICLModal, estadoICL } from './ActualizacionICL.jsx'
-import Modal, { Campo, Input } from './Modal.jsx'
+import Modal, { Campo, Input, SelectorAlquiladaPorMi } from './Modal.jsx'
 
 function NuevaPropiedadModal({ onGuardar, onCerrar }) {
-  const [form, setForm] = useState({ Direccion: '', Tipo: '', Ciudad: '' })
+  const [form, setForm] = useState({ Direccion: '', Tipo: '', Ciudad: '', alquiladaPorMi: false })
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
   function guardar() {
@@ -15,6 +15,7 @@ function NuevaPropiedadModal({ onGuardar, onCerrar }) {
       Direccion: form.Direccion.trim(),
       Tipo: form.Tipo.trim(),
       Ciudad: form.Ciudad.trim(),
+      alquiladaPorMi: form.alquiladaPorMi,
       PrecioReferencia: 0,
       'aguas CTA': null,
       'NIS edersa': null,
@@ -35,6 +36,9 @@ function NuevaPropiedadModal({ onGuardar, onCerrar }) {
       </Campo>
       <Campo label="Ciudad">
         <Input value={form.Ciudad} onChange={v => set('Ciudad', v)} placeholder="Ej: Cipolletti" />
+      </Campo>
+      <Campo label="¿Cobrás o pagás el alquiler?">
+        <SelectorAlquiladaPorMi value={form.alquiladaPorMi} onChange={v => set('alquiladaPorMi', v)} />
       </Campo>
       <div style={{ fontSize: 13, color: 'var(--text3)' }}>
         Después de crearla se abre la propiedad para cargarle el contrato.
@@ -90,37 +94,58 @@ function AlertasResumen({ propiedades }) {
 
 function ResumenTotales({ propiedades }) {
   const { getContratoActivo, getPagosContrato } = useData()
-  let totalMes = 0, pagados = 0, pendientes = 0
+  // Dos contabilidades separadas: lo que cobra (propiedades suyas) y lo que paga (las que alquila ella)
+  const cobro = { total: 0, ok: 0, pend: 0 }
+  const pago = { total: 0, ok: 0, pend: 0, hay: false }
 
   for (const p of propiedades) {
     const contrato = getContratoActivo(p.IdPropiedad)
     if (!contrato) continue
-    const pagos = getPagosContrato(contrato.IdContrato)
-    const estado = estadoPago(pagos, contrato)
-    totalMes += contrato.MontoInicial || 0
+    const cuenta = p.alquiladaPorMi ? pago : cobro
+    if (p.alquiladaPorMi) pago.hay = true
+    const estado = estadoPago(getPagosContrato(contrato.IdContrato), contrato)
+    cuenta.total += contrato.MontoInicial || 0
     if (estado === 'futuro') continue // todavía no empezó: no cuenta como pagado ni pendiente
-    if (estado === 'pagado') pagados++
-    else pendientes++
+    if (estado === 'pagado') cuenta.ok++
+    else cuenta.pend++
   }
 
   return (
-    <div className="summary-grid">
-      <div className="summary-tile">
-        <div className="label">Total alquileres / mes</div>
-        <div className="value" style={{ fontSize: 17 }}>{formatPesos(totalMes)}</div>
-      </div>
-      <div className="summary-tile">
-        <div className="label">Pagados / Pendientes</div>
-        <div className="value" style={{ fontSize: 18 }}>
-          <span className="green">{pagados}</span>
-          <span style={{ color: '#ccc', margin: '0 4px' }}>/</span>
-          <span className="red">{pendientes}</span>
+    <>
+      <div className="summary-grid">
+        <div className="summary-tile">
+          <div className="label">Cobro alquileres / mes</div>
+          <div className="value" style={{ fontSize: 17 }}>{formatPesos(cobro.total)}</div>
+        </div>
+        <div className="summary-tile">
+          <div className="label">Cobrados / Pendientes</div>
+          <div className="value" style={{ fontSize: 18 }}>
+            <span className="green">{cobro.ok}</span>
+            <span style={{ color: '#ccc', margin: '0 4px' }}>/</span>
+            <span className="red">{cobro.pend}</span>
+          </div>
         </div>
       </div>
-    </div>
+      {pago.hay && (
+        <div className="summary-grid">
+          <div className="summary-tile">
+            <div className="label">🔑 Pago alquiler / mes</div>
+            <div className="value red" style={{ fontSize: 17 }}>{formatPesos(pago.total)}</div>
+          </div>
+          <div className="summary-tile">
+            <div className="label">Neto / mes</div>
+            <div className={`value ${cobro.total - pago.total < 0 ? 'red' : 'green'}`} style={{ fontSize: 17 }}>
+              {formatPesos(cobro.total - pago.total)}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
+              {pago.pend > 0 ? `⏳ ${pago.pend} alquiler a pagar este mes` : pago.ok > 0 ? '✓ Alquiler de este mes pagado' : ''}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
-
 function PropiedadCard({ propiedad, onClick, onArchivos }) {
   const { getContratoActivo, getInquilino, getPagosContrato } = useData()
   const contrato = getContratoActivo(propiedad.IdPropiedad)
@@ -130,6 +155,7 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
   const dias = contrato ? diasParaVencer(contrato.FechaFin) : null
   const iclEstado = contrato ? estadoICL(contrato) : null
   const apellido = inquilino?.Apellido?.split(/[\s/]/)[0] || ''
+  const alquilada = !!propiedad.alquiladaPorMi
 
   return (
     <div className="card" onClick={onClick} style={{ cursor: 'pointer' }}>
@@ -140,6 +166,9 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
             <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 2 }}>
               {propiedad.Tipo} · {propiedad.Ciudad}
             </div>
+            {alquilada && (
+              <span className="badge" style={{ marginTop: 4, background: '#FEE2E2', color: 'var(--red)' }}>🔑 La alquilo yo</span>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {contrato && estado === 'futuro' && (
@@ -147,7 +176,7 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
             )}
             {contrato && estado !== 'futuro' && (
               <span className={`badge ${estado === 'pagado' ? 'badge-green' : 'badge-red'}`}>
-                {estado === 'pagado' ? '✓ Pagado' : '⏳ Pendiente'}
+                {estado === 'pagado' ? '✓ Pagado' : (alquilada ? '⏳ A pagar' : '⏳ Pendiente')}
               </span>
             )}
             {!contrato && <span className="badge badge-gray">Sin contrato</span>}
@@ -156,7 +185,7 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
 
         {inquilino && (
           <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 8 }}>
-            👤 {inquilino.Apellido}
+            👤 {alquilada ? 'Propietario: ' : ''}{inquilino.Apellido}
           </div>
         )}
 
@@ -169,15 +198,17 @@ function PropiedadCard({ propiedad, onClick, onArchivos }) {
             color: iclEstado === 'corresponde' ? '#92400E' : 'var(--text3)',
             border: `1px solid ${iclEstado === 'corresponde' ? '#FDE68A' : 'var(--border)'}`,
           }}>
-            {iclEstado === 'corresponde' ? '🔔 Actualizar alquiler antes de cobrar' : '📅 Actualizar el mes próximo'}
+            {iclEstado === 'corresponde'
+              ? (alquilada ? '🔔 Este mes aumenta el alquiler' : '🔔 Actualizar alquiler antes de cobrar')
+              : (alquilada ? '📅 Aumenta el mes próximo' : '📅 Actualizar el mes próximo')}
           </div>
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {contrato && (
-            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent)' }}>
-              {formatPesos(contrato.MontoInicial)}
-              <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text2)' }}>/mes</span>
+            <div style={{ fontSize: 15, fontWeight: 700, color: alquilada ? 'var(--red)' : 'var(--accent)' }}>
+              {alquilada ? '- ' : ''}{formatPesos(contrato.MontoInicial)}
+              <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text2)' }}>{alquilada ? '/mes a pagar' : '/mes'}</span>
             </div>
           )}
           {!contrato && <div />}

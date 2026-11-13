@@ -2,7 +2,9 @@ import { useState } from 'react'
 import Modal, { Campo, Input, Textarea } from './Modal.jsx'
 import { isoHoy } from '../utils.js'
 
-export default function NuevoContratoModal({ idPropiedad, inquilinos, hayContratoActivo, onGuardar, onCerrar, onAgregarInquilino }) {
+export default function NuevoContratoModal({ idPropiedad, inquilinos, hayContratoActivo, alquilada, onGuardar, onCerrar, onAgregarInquilino }) {
+  // En una propiedad que Lucre alquila, la "otra parte" del contrato es el propietario
+  const persona = alquilada ? 'propietario' : 'inquilino'
   const [form, setForm] = useState({
     IdInquilino: '',
     FechaInicio: isoHoy(),
@@ -29,7 +31,7 @@ export default function NuevoContratoModal({ idPropiedad, inquilinos, hayContrat
 
   function guardar() {
     // Sin inquilino el contrato quedaría activo pero invisible en la app
-    if (!parseInt(form.IdInquilino)) { alert('Elegí el inquilino (o agregalo con "+ Agregar nuevo inquilino").'); return }
+    if (!parseInt(form.IdInquilino)) { alert(`Elegí el ${persona} (o agregalo con "+ Agregar nuevo ${persona}").`); return }
     if (!(parseFloat(form.MontoInicial) > 0)) { alert('Completá el monto mensual.'); return }
     if (!form.FechaFin) { alert('Completá la fecha de vencimiento.'); return }
     onGuardar({
@@ -55,7 +57,7 @@ export default function NuevoContratoModal({ idPropiedad, inquilinos, hayContrat
           El contrato actual pasa a "Contratos anteriores" (no se borra, y sus pagos quedan guardados).
         </div>
       )}
-      <Campo label="Inquilino">
+      <Campo label={alquilada ? 'Propietario / inmobiliaria (a quién le pagás)' : 'Inquilino'}>
         <select
           value={form.IdInquilino}
           onChange={e => set('IdInquilino', e.target.value)}
@@ -72,13 +74,13 @@ export default function NuevoContratoModal({ idPropiedad, inquilinos, hayContrat
             onClick={() => setMostrarNuevoInq(true)}
             style={{ marginTop: 8, fontSize: 13, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            + Agregar nuevo inquilino
+            + Agregar nuevo {persona}
           </button>
         )}
 
         {mostrarNuevoInq && (
           <div style={{ marginTop: 10, background: 'var(--bg)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Nuevo inquilino</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Nuevo {persona}</div>
             <Input placeholder="Nombre completo *" value={nuevoInq.Apellido} onChange={v => setNuevoInq(n => ({ ...n, Apellido: v }))} />
             <Input placeholder="Celular" value={nuevoInq.Celular} onChange={v => setNuevoInq(n => ({ ...n, Celular: v }))} />
             <div style={{ display: 'flex', gap: 8 }}>
@@ -104,7 +106,7 @@ export default function NuevoContratoModal({ idPropiedad, inquilinos, hayContrat
         </Campo>
       </div>
 
-      <Campo label="Monto mensual ($)">
+      <Campo label={alquilada ? 'Monto mensual que pagás ($)' : 'Monto mensual ($)'}>
         <Input type="number" value={form.MontoInicial} onChange={v => set('MontoInicial', v)} placeholder="0" />
       </Campo>
 
